@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mobile Chat</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-blue">
+    <div id="login-screen">
+        <div class="login-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0;">🔐 Новый чат</h2>
+                <button id="loginSettingsBtn" style="background: transparent; border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary);">⚙️</button>
+            </div>
+            <input type="text" id="userName" placeholder="Ваше имя (в сообщениях)" autocomplete="off">
+            <div class="input-hint">Имя, которое будут видеть другие</div>
+            <input type="text" id="seedPhrase" class="seed-field" placeholder="Сид-фраза (ID группы)" autocomplete="off">
+            <div class="input-hint">Общий ID группы – все участники вводят одинаковый</div>
+            <input type="text" id="yandexToken" placeholder="Токен Яндекса (начинается с y0_...)" autocomplete="off">
+            <div class="input-hint">Токен от Яндекс.Диска (один на всех)</div>
+            <div class="token-help">
+                <p>🔑 <a href="https://yandex.ru/dev/disk/poligon/" target="_blank" rel="noopener noreferrer">Получить токен</a></p>
+            </div>
+            <button id="loginBtn">Войти в чат</button>
+            <button class="cancel-btn" id="cancelLoginBtn">Отмена</button>
+        </div>
+    </div>
+
+    <div id="chat-screen">
+        <div class="main-container">
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <span>Чаты</span>
+                    <button class="add-chat-btn" id="addChatBtn">+</button>
+                </div>
+                <div id="chat-list" class="chat-list"></div>
+                <div class="current-user-info" id="currentUserInfo">
+                    <div class="current-user-avatar" id="currentUserAvatar">
+                        <img src="" alt="" style="display: none;">
+                        <span>👤</span>
+                    </div>
+                    <span id="currentUserDisplay"></span>
+                    <button class="change-avatar-btn" id="changeAvatarBtn" title="Сменить аватар">📷</button>
+                </div>
+                <div class="settings-item" id="settingsBtn">
+                    <span>⚙️</span> Настройки
+                </div>
+            </div>
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+            <div class="chat-area">
+                <div class="header">
+                    <button class="menu-btn" id="menuBtn">☰</button>
+                    <span class="header-title" id="display-name"></span>
+                    <div class="header-controls">
+                        <button id="participantsBtn" title="Участники">👥</button>
+                        <button id="refreshBtn" title="Обновить">⟳</button>
+                    </div>
+                </div>
+
+                <div class="pinned-messages" id="pinnedContainer" style="display: none;"></div>
+                <div class="typing-indicator" id="typingIndicator"></div>
+                <div class="ptr-indicator" id="ptrIndicator">⬇️ Потяните для обновления</div>
+                <div id="messages"></div>
+
+                <div class="input-wrapper">
+                    <div id="file-preview-container"></div>
+
+                    <!-- Голосовые сообщения временно отключены -->
+                    <div class="voice-recorder" id="voiceRecorder" style="display: none;"></div>
+
+                    <div class="quote-indicator" id="quoteIndicator" style="display: none;">
+                        <span id="quoteText"></span>
+                        <button id="cancelQuoteBtn">✖</button>
+                    </div>
+
+                    <div id="uploadIndicator" class="upload-indicator">
+                        <div class="spinner"></div>
+                        <span id="uploadStatusText">Загрузка...</span>
+                        <span id="uploadProgress"></span>
+                        <button class="cancel-btn" id="cancelUploadBtn">Отменить</button>
+                    </div>
+
+                    <div class="input-area">
+                        <button class="attach-btn" id="attachBtn" title="Прикрепить файлы">📎</button>
+                        <!-- Голосовые сообщения временно отключены -->
+                        <input type="file" id="fileInput" style="display: none;" multiple>
+                        <input type="text" id="msgInput" placeholder="Сообщение..." autocomplete="off">
+                        <button class="send-btn" id="sendBtn">➤</button>
+                    </div>
+
+                    <div class="markdown-hint">
+                        <span>**жирный**</span> <span>*курсив*</span> <span>`код`</span> <span>[текст](ссылка)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h3>⚙️ Настройки</h3>
+            <div class="settings-section">
+                <h4>Уведомления</h4>
+                <div class="setting-option" id="notificationsToggle">
+                    <span class="setting-label">Уведомления</span>
+                    <span class="setting-value" id="notificationsValue">Вкл</span>
+                </div>
+                <div class="setting-option" id="soundToggle">
+                    <span class="setting-label">Звук</span>
+                    <span class="setting-value" id="soundValue">Вкл</span>
+                </div>
+                <div class="setting-option" id="vibrationToggle">
+                    <span class="setting-label">Вибрация</span>
+                    <span class="setting-value" id="vibrationValue">Вкл</span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h4>Модерация</h4>
+                <div class="setting-option" id="censorToggle">
+                    <span class="setting-label">Цензура (фильтр мата)</span>
+                    <span class="setting-value" id="censorValue">Выкл</span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h4>Прокси для скачивания</h4>
+                <div class="setting-option" id="proxyToggle">
+                    <span class="setting-label">Использовать прокси</span>
+                    <span class="setting-value" id="proxyValue">Вкл</span>
+                </div>
+                <div class="input-hint" style="margin-top:4px;">Введите адрес прокси (должен заканчиваться на ?url=)</div>
+                <div class="setting-option" style="flex-wrap: wrap; cursor: default;">
+                    <span class="setting-label">Адрес прокси</span>
+                    <input type="url" id="proxyUrlInput" value="https://api.allorigins.win/raw?url=" style="width:100%; margin-top:8px; padding:8px; background:var(--bg-input); border:1px solid var(--border); border-radius:40px; color:var(--text-primary);">
+                </div>
+            </div>
+            <div class="settings-section">
+                <h4>Тема оформления</h4>
+                <div class="setting-option" id="themeToggle">
+                    <span class="setting-label" id="themeLabel">Переключить на светлую тему</span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h4>Цвет акцента</h4>
+                <div class="theme-grid">
+                    <div class="theme-option" data-theme="blue">🔵 Синий</div>
+                    <div class="theme-option" data-theme="green">🟢 Зелёный</div>
+                    <div class="theme-option" data-theme="purple">🟣 Фиолетовый</div>
+                    <div class="theme-option" data-theme="gray">⚫ Серый</div>
+                </div>
+            </div>
+            <button class="reset-btn" id="resetSettingsBtn">Сбросить настройки</button>
+            <div class="close-modal">
+                <button id="closeSettingsModal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="participants-modal" class="modal">
+        <div class="modal-content">
+            <h3>Участники чата</h3>
+            <ul id="participants-list"></ul>
+            <div class="close-modal">
+                <button id="closeParticipantsModal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-details-modal" class="modal">
+        <div class="modal-content">
+            <h3>📄 Детали чата</h3>
+            <div style="margin-bottom: 1rem;">
+                <strong>Имя в чате:</strong>
+                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px; word-break: break-all;" id="detailName"></div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <strong>Сид-фраза (ID группы):</strong>
+                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px; word-break: break-all;" id="detailSeed"></div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <strong>Токен:</strong>
+                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px; word-break: break-all;" id="detailToken"></div>
+            </div>
+            <div class="close-modal">
+                <button id="closeDetailsModal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="join-chat-modal" class="modal">
+        <div class="modal-content">
+            <h3>🔑 Вход в группу</h3>
+            <input type="text" id="joinSeedPhrase" class="seed-field" placeholder="Сид-фраза (ID группы)" autocomplete="off">
+            <input type="text" id="joinName" placeholder="Ваше имя" autocomplete="off">
+            <input type="text" id="joinToken" placeholder="Токен Яндекса (начинается с y0_...)" autocomplete="off">
+            <button id="joinChatBtn" class="modal-btn">Войти</button>
+            <button id="createNewFromJoinBtn" class="modal-btn" style="margin-top: 0.5rem;">Создать новую группу</button>
+            <div class="close-modal">
+                <button id="closeJoinModal">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="avatar-modal" class="modal">
+        <div class="modal-content">
+            <h3>📷 Смена аватара</h3>
+            <div class="avatar-preview">
+                <img id="avatarPreview" src="" alt="Превью" style="max-width: 150px; max-height: 150px; border-radius: 50%; margin: 0 auto 1rem; display: none;">
+            </div>
+            <input type="file" id="avatarInput" accept="image/*">
+            <div class="avatar-hint">Выберите изображение (до 2 МБ)</div>
+            <button id="uploadAvatarBtn" class="modal-btn">Загрузить</button>
+            <button id="removeAvatarBtn" class="modal-btn" style="background: #b33; margin-top: 0.5rem;">Удалить аватар</button>
+            <div class="close-modal">
+                <button id="closeAvatarModal">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
