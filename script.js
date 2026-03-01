@@ -13,15 +13,14 @@
     const MAX_STORED_MESSAGES = 1000;
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
     
-    // Прокси для ротации (только без регистрации)
-    const PROXY_LIST = [
-        'https://api.allorigins.win/raw?url=',      // 50 запросов/час на IP
-        'https://corsproxy.io/?url=',               // Публичный, может блокировать
-        'https://thingproxy.freeboard.io/fetch/',   // Без ?url=
-        'https://cors.5apps.com/?uri=',             // ?uri= вместо ?url=
-        'https://crossorigin.me/',                   // Без ?url=
-        'https://cors.bridged.cc/'                   // Без ?url=
-    ];
+// Прокси для ротации
+const PROXY_LIST = [
+    'https://cors-anywhere.azm.workers.dev/?url=',  // Быстрый, без лимитов
+    'https://api.allorigins.win/raw?url=',          // Лимит 50/час
+    'https://cors-proxy-rafa.herokuapp.com/?url=', // Стабильный
+    'https://corsfix.com/?url=',                    // Работает с Яндексом
+    'https://corsproxy.io/?url='                    // Запасной вариант
+];
 
     let currentProxyIndex = 0;
     let proxyFailCount = 0;
@@ -2257,51 +2256,54 @@
         if (e.target === avatarModal) avatarModal.style.display = 'none';
     });
 
-    // Функция проверки всех прокси
-    async function checkAllProxiesHealth() {
-        console.log('🔍 Проверка доступности прокси...');
-        let workingCount = 0;
-        
-        for (let i = 0; i < PROXY_LIST.length; i++) {
-            const proxy = PROXY_LIST[i];
-            try {
-                let testUrl = 'https://cloud-api.yandex.net/v1/disk';
-                let targetUrl;
-                
-                if (!proxy.includes('?url=') && !proxy.includes('?uri=')) {
-                    const cleanProxy = proxy.replace(/\/$/, '');
-                    targetUrl = cleanProxy + '/' + encodeURIComponent(testUrl);
-                } else {
-                    targetUrl = proxy + encodeURIComponent(testUrl);
-                }
-                
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                
-                const response = await fetch(targetUrl, {
-                    method: 'HEAD',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.status !== 429 && response.status !== 403) {
-                    workingCount++;
-                    console.log(`✅ Прокси #${i + 1} работает: ${proxy}`);
-                } else {
-                    console.warn(`⚠️ Прокси #${i + 1} превысил лимит: ${proxy}`);
-                }
-            } catch {
-                console.warn(`⚠️ Прокси #${i + 1} недоступен: ${proxy}`);
+// Функция проверки всех прокси
+async function checkAllProxiesHealth() {
+    console.log('🔍 Проверка доступности прокси...');
+    let workingCount = 0;
+    
+    for (let i = 0; i < PROXY_LIST.length; i++) {
+        const proxy = PROXY_LIST[i];
+        try {
+            let testUrl = 'https://cloud-api.yandex.net/v1/disk';
+            let targetUrl;
+            
+            // Формируем URL в зависимости от формата прокси
+            if (proxy.includes('?url=') || proxy.includes('?uri=') || proxy.includes('?quest=')) {
+                targetUrl = proxy + encodeURIComponent(testUrl);
+            } else {
+                const cleanProxy = proxy.replace(/\/$/, '');
+                targetUrl = cleanProxy + '/' + encodeURIComponent(testUrl);
             }
-        }
-        
-        if (workingCount === 0) {
-            showError('⚠️ Все прокси временно недоступны. Проверьте подключение к интернету.');
-        } else {
-            console.log(`📊 Доступно прокси: ${workingCount}/${PROXY_LIST.length}`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            
+            const response = await fetch(targetUrl, {
+                method: 'HEAD',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            // Считаем успехом: статус 2xx или 401 (означает, что запрос прошёл, но нужна авторизация)
+            if (response.status >= 200 && response.status < 300 || response.status === 401) {
+                workingCount++;
+                console.log(`✅ Прокси #${i + 1} работает: ${proxy} (статус ${response.status})`);
+            } else {
+                console.warn(`⚠️ Прокси #${i + 1} вернул статус ${response.status}: ${proxy}`);
+            }
+        } catch (err) {
+            console.warn(`⚠️ Прокси #${i + 1} недоступен: ${proxy} — ${err.message}`);
         }
     }
+    
+    if (workingCount === 0) {
+        showError('⚠️ Все прокси временно недоступны. Попробуйте позже или настройте свой прокси.');
+    } else {
+        console.log(`📊 Доступно прокси: ${workingCount}/${PROXY_LIST.length}`);
+        showSuccess(`Доступно ${workingCount} из ${PROXY_LIST.length} прокси`);
+    }
+}
 
     // Запускаем проверку прокси через 3 секунды после загрузки
     setTimeout(checkAllProxiesHealth, 3000);
