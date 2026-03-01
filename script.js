@@ -13,14 +13,21 @@
     const MAX_STORED_MESSAGES = 1000;
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
     
-// Прокси для ротации
+// Прокси для ротации (ваш + запасные)
 const PROXY_LIST = [
-    'https://cors-anywhere.azm.workers.dev/?url=',  // Быстрый, без лимитов
-    'https://api.allorigins.win/raw?url=',          // Лимит 50/час
-    'https://cors-proxy-rafa.herokuapp.com/?url=', // Стабильный
-    'https://corsfix.com/?url=',                    // Работает с Яндексом
-    'https://corsproxy.io/?url='                    // Запасной вариант
+    'https://thunderous-dasik-05b16d.netlify.app/proxy/?url=',  // Основной
+    'https://api.allorigins.win/raw?url=',                      // Запасной #1
+    'https://cors.boats/?url=',                                 // Запасной #2
+    'https://api.akeno.ru/v1/proxy?url=',                       // Запасной #3
+    'https://rucors.xyz/?url=',                                 // Запасной #4
+    'https://api.codetabs.com/v1/proxy?quest=',                 // Запасной #5
+    'https://corsproxy.io/?url=',                               // Запасной #6
+    'https://thingproxy.freeboard.io/fetch/',                   // Запасной #7
+    'https://cors.bridged.cc/'                                   // Запасной #8
 ];
+
+// Таймаут
+const TIMEOUT = 45000; // 45 секунд
 
     let currentProxyIndex = 0;
     let proxyFailCount = 0;
