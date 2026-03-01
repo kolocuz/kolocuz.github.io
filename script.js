@@ -26,8 +26,6 @@ const PROXY_LIST = [
     'https://cors.bridged.cc/'                                   // Запасной #8
 ];
 
-// Таймаут
-const TIMEOUT = 45000; // 45 секунд
 
     let currentProxyIndex = 0;
     let proxyFailCount = 0;
