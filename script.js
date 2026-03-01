@@ -5,7 +5,7 @@
     const AVATARS_FOLDER = 'avatars';
     const FILE_EXPIRY_DAYS = 14;
     const MAX_RETRIES = 3;
-    const TIMEOUT = 30000;
+    const TIMEOUT = 45000; // 45 секунд (увеличено)
     const POLL_INTERVAL = 5000;
     const LONG_PRESS_DELAY = 500;
     const MAX_MESSAGE_LENGTH = 4096;
@@ -13,27 +13,32 @@
     const MAX_STORED_MESSAGES = 1000;
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
     
-// Прокси для ротации (ваш + запасные)
-const PROXY_LIST = [
-    'https://thunderous-dasik-05b16d.netlify.app/proxy/?url=',  // Основной
-    'https://api.allorigins.win/raw?url=',                      // Запасной #1
-    'https://cors.boats/?url=',                                 // Запасной #2
-    'https://api.akeno.ru/v1/proxy?url=',                       // Запасной #3
-    'https://rucors.xyz/?url=',                                 // Запасной #4
-    'https://api.codetabs.com/v1/proxy?quest=',                 // Запасной #5
-    'https://corsproxy.io/?url=',                               // Запасной #6
-    'https://thingproxy.freeboard.io/fetch/',                   // Запасной #7
-    'https://cors.bridged.cc/'                                   // Запасной #8
-];
-
+    // 👑 ТОЛЬКО ВАШ ПРОКСИ + МИНИМУМ ЗАПАСНЫХ
+    const PROXY_LIST = [
+        'https://thunderous-dasik-05b16d.netlify.app/proxy/?url=',  // ОСНОВНОЙ
+        'https://api.allorigins.win/raw?url=',                      // Запасной 1
+        'https://corsproxy.io/?url='                                // Запасной 2
+    ];
 
     let currentProxyIndex = 0;
     let proxyFailCount = 0;
-    const MAX_FAILS = 3;
+    const MAX_FAILS = 10; // 10 ошибок перед переключением
     let lastProxySwitchTime = 0;
-    const MIN_SWITCH_INTERVAL = 5000;
+    const MIN_SWITCH_INTERVAL = 30000; // 30 секунд между переключениями
     let allProxiesBlockedUntil = 0;
     const BLOCK_RESET_TIMEOUT = 60000; // 1 минута
+
+    // Антикеш для fetch запросов
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+        if (typeof url === 'string' && (options.method === undefined || options.method === 'GET')) {
+            const separator = url.includes('?') ? '&' : '?';
+            url = `${url}${separator}_=${Date.now()}`;
+        }
+        return originalFetch.call(this, url, options);
+    };
+    
+    console.log('🔄 Чат загружен, версия 3.0');
 
     const isSecureContext = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname.startsWith('127.');
     if (!isSecureContext) {
@@ -515,12 +520,11 @@ const PROXY_LIST = [
             let proxyUrl = PROXY_LIST[currentProxyIndex];
             let targetUrl;
             
-            // Для прокси без параметра ?url= (thingproxy, crossorigin.me и т.д.)
-            if (!proxyUrl.includes('?url=') && !proxyUrl.includes('?uri=')) {
-                proxyUrl = proxyUrl.replace(/\/$/, '');
-                targetUrl = proxyUrl + '/' + encodeURIComponent(fullUrl);
-            } else {
+            if (proxyUrl.includes('?url=') || proxyUrl.includes('?uri=') || proxyUrl.includes('?quest=')) {
                 targetUrl = proxyUrl + encodeURIComponent(fullUrl);
+            } else {
+                const cleanProxy = proxyUrl.replace(/\/$/, '');
+                targetUrl = cleanProxy + '/' + encodeURIComponent(fullUrl);
             }
             
             const headers = { 'Content-Type': 'application/json' };
@@ -539,12 +543,11 @@ const PROXY_LIST = [
                 });
                 clearTimeout(timeoutId);
                 
-                // Проверяем на ошибки лимитов
                 if (response.status === 429 || response.status === 403) {
                     throw new Error(`Rate limited (${response.status})`);
                 }
                 
-                proxyFailCount = 0; // Сбрасываем счётчик при успехе
+                proxyFailCount = 0;
                 return response;
                 
             } catch (err) {
@@ -552,7 +555,6 @@ const PROXY_LIST = [
                 
                 console.warn(`❌ Прокси #${currentProxyIndex + 1} ошибка:`, err.message);
                 
-                // Если это ошибка лимита, увеличиваем счётчик
                 if (err.message.includes('Rate limited') || 
                     err.message.includes('429') || 
                     err.message.includes('403') ||
@@ -561,18 +563,15 @@ const PROXY_LIST = [
                     
                     proxyFailCount++;
                     
-                    // Если слишком много ошибок - переключаем прокси
                     if (proxyFailCount >= MAX_FAILS) {
                         const switched = this.switchToNextProxy();
                         
-                        // Если не удалось переключиться (все прокси перебрали)
                         if (!switched) {
                             allProxiesBlockedUntil = Date.now() + BLOCK_RESET_TIMEOUT;
-                            showError('🔄 Все прокси временно недоступны или исчерпали лимиты. Пожалуйста, подождите 1 минуту.');
+                            showError('🔄 Все прокси временно недоступны. Подождите 1 минуту.');
                             throw new Error('All proxies are rate limited or unavailable');
                         }
                         
-                        // Пробуем снова с новым прокси
                         if (retryCount < PROXY_LIST.length * 2) {
                             await new Promise(resolve => setTimeout(resolve, 1000));
                             return this.request(endpoint, options, retryCount + 1);
@@ -587,7 +586,6 @@ const PROXY_LIST = [
         switchToNextProxy() {
             const now = Date.now();
             
-            // Проверяем, не переключались ли мы слишком часто
             if (now - lastProxySwitchTime < MIN_SWITCH_INTERVAL) {
                 return true;
             }
@@ -595,12 +593,10 @@ const PROXY_LIST = [
             const startIndex = currentProxyIndex;
             let attempts = 0;
             
-            // Пытаемся найти работающий прокси
             while (attempts < PROXY_LIST.length) {
                 currentProxyIndex = (currentProxyIndex + 1) % PROXY_LIST.length;
                 attempts++;
                 
-                // Если вернулись к начальному - все прокси перебрали
                 if (currentProxyIndex === startIndex) {
                     proxyFailCount = 0;
                     lastProxySwitchTime = now;
@@ -610,7 +606,7 @@ const PROXY_LIST = [
                 proxyFailCount = 0;
                 lastProxySwitchTime = now;
                 
-                console.log(`🔄 Переключено на прокси #${currentProxyIndex + 1}: ${PROXY_LIST[currentProxyIndex]}`);
+                console.log(`🔄 Переключено на прокси #${currentProxyIndex + 1}`);
                 showWarning(`Прокси переключён на #${currentProxyIndex + 1}`);
                 
                 return true;
@@ -633,11 +629,11 @@ const PROXY_LIST = [
                 let proxyUrl = PROXY_LIST[currentProxyIndex];
                 let targetUrl;
                 
-                if (!proxyUrl.includes('?url=') && !proxyUrl.includes('?uri=')) {
-                    proxyUrl = proxyUrl.replace(/\/$/, '');
-                    targetUrl = proxyUrl + '/' + encodeURIComponent(downloadUrl);
-                } else {
+                if (proxyUrl.includes('?url=') || proxyUrl.includes('?uri=') || proxyUrl.includes('?quest=')) {
                     targetUrl = proxyUrl + encodeURIComponent(downloadUrl);
+                } else {
+                    const cleanProxy = proxyUrl.replace(/\/$/, '');
+                    targetUrl = cleanProxy + '/' + encodeURIComponent(downloadUrl);
                 }
                 
                 const controller = new AbortController();
@@ -906,7 +902,6 @@ const PROXY_LIST = [
         currentSeed = chat.seed;
         currentYandexToken = chat.yandexToken || DEFAULT_TOKEN;
         
-        // Сбрасываем индекс прокси при смене чата
         currentProxyIndex = 0;
         proxyFailCount = 0;
         
@@ -1524,13 +1519,13 @@ const PROXY_LIST = [
                     let proxyUrl = PROXY_LIST[currentProxyIndex];
                     let fileUrl, filePublicUrl;
                     
-                    if (!proxyUrl.includes('?url=') && !proxyUrl.includes('?uri=')) {
-                        proxyUrl = proxyUrl.replace(/\/$/, '');
-                        fileUrl = proxyUrl + '/' + encodeURIComponent(f.downloadUrl);
-                        filePublicUrl = proxyUrl + '/' + encodeURIComponent(f.url);
-                    } else {
+                    if (proxyUrl.includes('?url=') || proxyUrl.includes('?uri=') || proxyUrl.includes('?quest=')) {
                         fileUrl = proxyUrl + encodeURIComponent(f.downloadUrl);
                         filePublicUrl = proxyUrl + encodeURIComponent(f.url);
+                    } else {
+                        const cleanProxy = proxyUrl.replace(/\/$/, '');
+                        fileUrl = cleanProxy + '/' + encodeURIComponent(f.downloadUrl);
+                        filePublicUrl = cleanProxy + '/' + encodeURIComponent(f.url);
                     }
                     
                     if (f.downloadUrl) {
@@ -2261,59 +2256,9 @@ const PROXY_LIST = [
         if (e.target === avatarModal) avatarModal.style.display = 'none';
     });
 
-// Функция проверки всех прокси
-async function checkAllProxiesHealth() {
-    console.log('🔍 Проверка доступности прокси...');
-    let workingCount = 0;
-    
-    for (let i = 0; i < PROXY_LIST.length; i++) {
-        const proxy = PROXY_LIST[i];
-        try {
-            let testUrl = 'https://cloud-api.yandex.net/v1/disk';
-            let targetUrl;
-            
-            // Формируем URL в зависимости от формата прокси
-            if (proxy.includes('?url=') || proxy.includes('?uri=') || proxy.includes('?quest=')) {
-                targetUrl = proxy + encodeURIComponent(testUrl);
-            } else {
-                const cleanProxy = proxy.replace(/\/$/, '');
-                targetUrl = cleanProxy + '/' + encodeURIComponent(testUrl);
-            }
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
-            
-            const response = await fetch(targetUrl, {
-                method: 'HEAD',
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            // Считаем успехом: статус 2xx или 401 (означает, что запрос прошёл, но нужна авторизация)
-            if (response.status >= 200 && response.status < 300 || response.status === 401) {
-                workingCount++;
-                console.log(`✅ Прокси #${i + 1} работает: ${proxy} (статус ${response.status})`);
-            } else {
-                console.warn(`⚠️ Прокси #${i + 1} вернул статус ${response.status}: ${proxy}`);
-            }
-        } catch (err) {
-            console.warn(`⚠️ Прокси #${i + 1} недоступен: ${proxy} — ${err.message}`);
-        }
-    }
-    
-    if (workingCount === 0) {
-        showError('⚠️ Все прокси временно недоступны. Попробуйте позже или настройте свой прокси.');
-    } else {
-        console.log(`📊 Доступно прокси: ${workingCount}/${PROXY_LIST.length}`);
-        showSuccess(`Доступно ${workingCount} из ${PROXY_LIST.length} прокси`);
-    }
-}
-
-    // Запускаем проверку прокси через 3 секунды после загрузки
-    setTimeout(checkAllProxiesHealth, 3000);
-    // И каждые 5 минут
-    setInterval(checkAllProxiesHealth, 5 * 60 * 1000);
+    // ❌ ВСЕ ПРОВЕРКИ ПРОКСИ ЗАКОММЕНТИРОВАНЫ - НЕ ТРАТИМ ВРЕМЯ
+    // setTimeout(checkAllProxiesHealth, 3000);
+    // setInterval(checkAllProxiesHealth, 5 * 60 * 1000);
 
     loadSettings();
     window.addEventListener('load', loadChatsFromStorage);
