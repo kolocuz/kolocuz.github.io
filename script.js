@@ -12,8 +12,24 @@
     const TYPING_TIMEOUT = 3000;
     const MAX_STORED_MESSAGES = 1000;
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
-    // Рабочий публичный прокси
-    const DEFAULT_PROXY_URL = 'https://api.allorigins.win/raw?url=';
+    
+    // Прокси для ротации (только без регистрации)
+    const PROXY_LIST = [
+        'https://api.allorigins.win/raw?url=',      // 50 запросов/час на IP
+        'https://corsproxy.io/?url=',               // Публичный, может блокировать
+        'https://thingproxy.freeboard.io/fetch/',   // Без ?url=
+        'https://cors.5apps.com/?uri=',             // ?uri= вместо ?url=
+        'https://crossorigin.me/',                   // Без ?url=
+        'https://cors.bridged.cc/'                   // Без ?url=
+    ];
+
+    let currentProxyIndex = 0;
+    let proxyFailCount = 0;
+    const MAX_FAILS = 3;
+    let lastProxySwitchTime = 0;
+    const MIN_SWITCH_INTERVAL = 5000;
+    let allProxiesBlockedUntil = 0;
+    const BLOCK_RESET_TIMEOUT = 60000; // 1 минута
 
     const isSecureContext = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname.startsWith('127.');
     if (!isSecureContext) {
@@ -86,8 +102,6 @@
         sound: true, 
         vibration: true, 
         censor: false,
-        proxy: true,
-        proxyUrl: DEFAULT_PROXY_URL,
         lightTheme: false, 
         colorTheme: 'blue'
     };
@@ -154,8 +168,6 @@
     const soundToggle = $('soundToggle');
     const vibrationToggle = $('vibrationToggle');
     const censorToggle = $('censorToggle');
-    const proxyToggle = $('proxyToggle');
-    const proxyUrlInput = $('proxyUrlInput');
     const themeToggle = $('themeToggle');
     const themeLabel = $('themeLabel');
     const themeOptions = document.querySelectorAll('.theme-option');
@@ -173,7 +185,6 @@
     const addChatBtn = $('addChatBtn');
     const notificationsValue = $('notificationsValue');
     const censorValue = $('censorValue');
-    const proxyValue = $('proxyValue');
     const joinChatModal = $('join-chat-modal');
     const joinSeedPhrase = $('joinSeedPhrase');
     const joinName = $('joinName');
@@ -244,7 +255,6 @@
 
     const showError = (message) => {
         console.error('Error:', message);
-        // Создаём toast-уведомление
         const toast = document.createElement('div');
         toast.style.cssText = 'position:fixed; bottom:20px; left:20px; right:20px; background:#f44336; color:white; padding:12px; border-radius:8px; z-index:10000; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.3);';
         toast.textContent = '❌ ' + message;
@@ -315,7 +325,6 @@
         } catch (e) {
             console.error('loadSettings error:', e);
         }
-        if (proxyUrlInput) proxyUrlInput.value = settings.proxyUrl || DEFAULT_PROXY_URL;
         applySettings();
         updateSettingsUI();
     };
@@ -334,13 +343,11 @@
         const vibrationValue = $('vibrationValue');
         const notificationsValue = $('notificationsValue');
         const censorValue = $('censorValue');
-        const proxyValue = $('proxyValue');
         
         if (soundValue) soundValue.innerText = settings.sound ? 'Вкл' : 'Выкл';
         if (vibrationValue) vibrationValue.innerText = settings.vibration ? 'Вкл' : 'Выкл';
         if (notificationsValue) notificationsValue.innerText = settings.notifications ? 'Вкл' : 'Выкл';
         if (censorValue) censorValue.innerText = settings.censor ? 'Вкл' : 'Выкл';
-        if (proxyValue) proxyValue.innerText = settings.proxy ? 'Вкл' : 'Выкл';
         
         if (themeLabel) {
             themeLabel.innerText = settings.lightTheme 
@@ -355,21 +362,8 @@
     };
 
     const saveSettings = () => {
-        if (proxyUrlInput) {
-            let url = proxyUrlInput.value.trim();
-            // Проверяем, что URL заканчивается на ?url=, если нет - добавляем
-            if (url && !url.includes('?url=')) {
-                if (!url.endsWith('/')) url += '/';
-                url += '?url=';
-            }
-            settings.proxyUrl = url;
-        }
         localStorage.setItem('chatSettings', JSON.stringify(settings));
         applySettings();
-        if (diskClient) {
-            diskClient.useProxy = settings.proxy;
-            diskClient.proxyUrl = settings.proxyUrl;
-        }
     };
 
     const resetSettings = () => {
@@ -378,21 +372,12 @@
             sound: true, 
             vibration: true, 
             censor: false,
-            proxy: true,
-            proxyUrl: DEFAULT_PROXY_URL,
             lightTheme: false, 
             colorTheme: 'blue'
         };
-        if (proxyUrlInput) proxyUrlInput.value = DEFAULT_PROXY_URL;
         saveSettings();
         showSuccess('Настройки сброшены');
     };
-
-    if (proxyUrlInput) {
-        proxyUrlInput.addEventListener('input', () => {
-            saveSettings();
-        });
-    }
 
     const playNotificationSound = () => {
         if (!settings.sound) return;
@@ -448,7 +433,7 @@
         try {
             const downloadUrl = await diskClient.getDownloadLink(avatarPath);
             if (downloadUrl) {
-                const url = settings.proxy ? settings.proxyUrl + encodeURIComponent(downloadUrl) : downloadUrl;
+                const url = PROXY_LIST[currentProxyIndex] + encodeURIComponent(downloadUrl);
                 userAvatars.set(name, url + '&t=' + Date.now());
                 return url;
             }
@@ -480,7 +465,7 @@
             const avatarPath = `${AVATARS_FOLDER}/${currentSeed}_${currentUser}.jpg`;
             await diskClient.uploadFile(compressedFile, avatarPath, () => {});
             const { downloadUrl } = await diskClient.publishFile(avatarPath);
-            const url = settings.proxy ? settings.proxyUrl + encodeURIComponent(downloadUrl) : downloadUrl;
+            const url = PROXY_LIST[currentProxyIndex] + encodeURIComponent(downloadUrl);
             userAvatars.set(currentUser, url);
             updateAvatarDisplay();
             renderMessages();
@@ -509,15 +494,30 @@
     }
 
     class YandexDiskClient {
-        constructor(token, useProxy, proxyUrl) {
+        constructor(token) {
             this.token = token;
-            this.useProxy = useProxy;
-            this.proxyUrl = proxyUrl;
         }
 
-        async request(endpoint, options = {}) {
+        async request(endpoint, options = {}, retryCount = 0) {
+            // Проверяем, не заблокированы ли все прокси
+            if (Date.now() < allProxiesBlockedUntil) {
+                const waitTime = Math.ceil((allProxiesBlockedUntil - Date.now()) / 1000);
+                throw new Error(`Все прокси временно заблокированы. Подождите ${waitTime} сек.`);
+            }
+
             const fullUrl = `https://cloud-api.yandex.net/v1/disk${endpoint}`;
-            const url = this.useProxy ? this.proxyUrl + encodeURIComponent(fullUrl) : fullUrl;
+            
+            // Формируем URL с учётом формата прокси
+            let proxyUrl = PROXY_LIST[currentProxyIndex];
+            let targetUrl;
+            
+            // Для прокси без параметра ?url= (thingproxy, crossorigin.me и т.д.)
+            if (!proxyUrl.includes('?url=') && !proxyUrl.includes('?uri=')) {
+                proxyUrl = proxyUrl.replace(/\/$/, '');
+                targetUrl = proxyUrl + '/' + encodeURIComponent(fullUrl);
+            } else {
+                targetUrl = proxyUrl + encodeURIComponent(fullUrl);
+            }
             
             const headers = { 'Content-Type': 'application/json' };
             if (this.token) {
@@ -528,24 +528,91 @@
             const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
             
             try {
-                const response = await fetch(url, {
+                const response = await fetch(targetUrl, {
                     ...options,
                     signal: controller.signal,
                     headers: { ...headers, ...options.headers }
                 });
                 clearTimeout(timeoutId);
                 
-                if (!response.ok) {
-                    let errorText = '';
-                    try { errorText = await response.text(); } catch (e) {}
-                    throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+                // Проверяем на ошибки лимитов
+                if (response.status === 429 || response.status === 403) {
+                    throw new Error(`Rate limited (${response.status})`);
                 }
+                
+                proxyFailCount = 0; // Сбрасываем счётчик при успехе
                 return response;
+                
             } catch (err) {
                 clearTimeout(timeoutId);
-                if (err.name === 'AbortError') throw new Error('Request timeout');
+                
+                console.warn(`❌ Прокси #${currentProxyIndex + 1} ошибка:`, err.message);
+                
+                // Если это ошибка лимита, увеличиваем счётчик
+                if (err.message.includes('Rate limited') || 
+                    err.message.includes('429') || 
+                    err.message.includes('403') ||
+                    err.name === 'AbortError' || 
+                    err.message.includes('Failed to fetch')) {
+                    
+                    proxyFailCount++;
+                    
+                    // Если слишком много ошибок - переключаем прокси
+                    if (proxyFailCount >= MAX_FAILS) {
+                        const switched = this.switchToNextProxy();
+                        
+                        // Если не удалось переключиться (все прокси перебрали)
+                        if (!switched) {
+                            allProxiesBlockedUntil = Date.now() + BLOCK_RESET_TIMEOUT;
+                            showError('🔄 Все прокси временно недоступны или исчерпали лимиты. Пожалуйста, подождите 1 минуту.');
+                            throw new Error('All proxies are rate limited or unavailable');
+                        }
+                        
+                        // Пробуем снова с новым прокси
+                        if (retryCount < PROXY_LIST.length * 2) {
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            return this.request(endpoint, options, retryCount + 1);
+                        }
+                    }
+                }
+                
                 throw err;
             }
+        }
+
+        switchToNextProxy() {
+            const now = Date.now();
+            
+            // Проверяем, не переключались ли мы слишком часто
+            if (now - lastProxySwitchTime < MIN_SWITCH_INTERVAL) {
+                return true;
+            }
+            
+            const startIndex = currentProxyIndex;
+            let attempts = 0;
+            
+            // Пытаемся найти работающий прокси
+            while (attempts < PROXY_LIST.length) {
+                currentProxyIndex = (currentProxyIndex + 1) % PROXY_LIST.length;
+                attempts++;
+                
+                // Если вернулись к начальному - все прокси перебрали
+                if (currentProxyIndex === startIndex) {
+                    proxyFailCount = 0;
+                    lastProxySwitchTime = now;
+                    return false;
+                }
+                
+                proxyFailCount = 0;
+                lastProxySwitchTime = now;
+                
+                console.log(`🔄 Переключено на прокси #${currentProxyIndex + 1}: ${PROXY_LIST[currentProxyIndex]}`);
+                showWarning(`Прокси переключён на #${currentProxyIndex + 1}`);
+                
+                return true;
+            }
+            
+            return false;
         }
 
         async getDownloadLink(path) {
@@ -559,20 +626,25 @@
                 const downloadUrl = await this.getDownloadLink(path);
                 if (!downloadUrl) return '';
                 
-                const url = this.useProxy ? this.proxyUrl + encodeURIComponent(downloadUrl) : downloadUrl;
+                let proxyUrl = PROXY_LIST[currentProxyIndex];
+                let targetUrl;
+                
+                if (!proxyUrl.includes('?url=') && !proxyUrl.includes('?uri=')) {
+                    proxyUrl = proxyUrl.replace(/\/$/, '');
+                    targetUrl = proxyUrl + '/' + encodeURIComponent(downloadUrl);
+                } else {
+                    targetUrl = proxyUrl + encodeURIComponent(downloadUrl);
+                }
                 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
-                const response = await fetch(url, { 
+                const response = await fetch(targetUrl, { 
                     signal: controller.signal,
                     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ChatApp)' }
                 });
                 clearTimeout(timeoutId);
                 
-                if (!response.ok) {
-                    console.warn('Proxy response not OK:', response.status);
-                    return '';
-                }
+                if (!response.ok) return '';
                 return await response.text();
             } catch (err) {
                 console.error('getFileContent error:', err);
@@ -829,7 +901,12 @@
         currentUser = chat.name;
         currentSeed = chat.seed;
         currentYandexToken = chat.yandexToken || DEFAULT_TOKEN;
-        diskClient = new YandexDiskClient(currentYandexToken, settings.proxy, settings.proxyUrl);
+        
+        // Сбрасываем индекс прокси при смене чата
+        currentProxyIndex = 0;
+        proxyFailCount = 0;
+        
+        diskClient = new YandexDiskClient(currentYandexToken);
         displayNameEl.innerText = chat.name;
         fileRegistry.clear();
         messageList = [];
@@ -911,7 +988,6 @@
             return;
         }
 
-        // Простая проверка токена
         if (!token.startsWith('y0_')) {
             showWarning('Токен должен начинаться с "y0_"');
         }
@@ -922,11 +998,10 @@
             return;
         }
 
-        // Блокируем кнопку
         loginBtn.disabled = true;
         loginBtn.innerText = 'Проверка...';
 
-        const testClient = new YandexDiskClient(token, settings.proxy, settings.proxyUrl);
+        const testClient = new YandexDiskClient(token);
         
         try {
             console.log('🔍 Проверка токена...');
@@ -950,9 +1025,11 @@
             } else if (err.message.includes('403')) {
                 showError("Нет доступа к диску (ошибка 403). Проверьте права токена.");
             } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                showError("Прокси не отвечает. Проверьте адрес прокси в настройках или подключение к интернету.");
+                showError("Прокси не отвечает. Проверьте подключение к интернету.");
             } else if (err.message.includes('timeout')) {
                 showError("Тайм-аут запроса. Прокси слишком медленный или недоступен.");
+            } else if (err.message.includes('All proxies are rate limited')) {
+                showError("Все прокси временно заблокированы. Подождите 1 минуту.");
             } else {
                 showError(`Ошибка: ${err.message}`);
             }
@@ -1071,8 +1148,6 @@
                 if (sidebarOverlay) sidebarOverlay.classList.remove('active');
             }
         });
-        
-        const globalSettingsBtn = newBtn;
         
         if (closeSettingsModal) {
             closeSettingsModal.addEventListener('click', (e) => {
@@ -1244,8 +1319,10 @@
             console.error('loadMessages error:', err);
             if (err.message.includes('404')) {
                 messagesEl.innerHTML = '<center>Чат пуст. Напишите первое сообщение!</center>';
+            } else if (err.message.includes('All proxies are rate limited')) {
+                messagesEl.innerHTML = '<center>⚠️ Все прокси временно заблокированы. Подождите 1 минуту.</center>';
             } else {
-                messagesEl.innerHTML = '<center>Ошибка загрузки. Проверьте прокси и токен.</center>';
+                messagesEl.innerHTML = '<center>Ошибка загрузки. Проверьте подключение к интернету.</center>';
             }
         }
     };
@@ -1302,7 +1379,7 @@
             }
         } catch (err) {
             console.warn('loadNewMessages error:', err);
-            if (retryCount > 0) {
+            if (retryCount > 0 && !err.message.includes('All proxies are rate limited')) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 return loadNewMessages(retryCount - 1);
             }
@@ -1317,15 +1394,13 @@
     const parseMarkdown = (text) => {
         let escaped = escapeHtml(text);
         
-        // Безопасные ссылки
         escaped = escaped.replace(/\[(.*?)\]\((.*?)\)/g, (match, p1, p2) => {
             if (p2.startsWith('http://') || p2.startsWith('https://')) {
                 return `<a href="${p2}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">${p1}</a>`;
             }
-            return p1; // небезопасная ссылка отбрасывается
+            return p1;
         });
         
-        // Прямые ссылки
         escaped = escaped.replace(/(https?:\/\/[^\s]+)/g, (match) => {
             return `<a href="${match}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">${match}</a>`;
         });
@@ -1442,8 +1517,17 @@
                     bubbleContent += `<div class="file-attachment">`;
                     bubbleContent += `<div class="file-info"><span class="file-icon">${icon}</span><span class="file-name">${escapeHtml(f.name)}</span></div>`;
                     
-                    const fileUrl = settings.proxy ? settings.proxyUrl + encodeURIComponent(f.downloadUrl) : f.downloadUrl;
-                    const filePublicUrl = settings.proxy ? settings.proxyUrl + encodeURIComponent(f.url) : f.url;
+                    let proxyUrl = PROXY_LIST[currentProxyIndex];
+                    let fileUrl, filePublicUrl;
+                    
+                    if (!proxyUrl.includes('?url=') && !proxyUrl.includes('?uri=')) {
+                        proxyUrl = proxyUrl.replace(/\/$/, '');
+                        fileUrl = proxyUrl + '/' + encodeURIComponent(f.downloadUrl);
+                        filePublicUrl = proxyUrl + '/' + encodeURIComponent(f.url);
+                    } else {
+                        fileUrl = proxyUrl + encodeURIComponent(f.downloadUrl);
+                        filePublicUrl = proxyUrl + encodeURIComponent(f.url);
+                    }
                     
                     if (f.downloadUrl) {
                         const ext = f.name.split('.').pop().toLowerCase();
@@ -1870,7 +1954,6 @@
                 showWarning(`Файл ${file.name} слишком большой (макс. 50 МБ)`);
                 continue;
             }
-            // Проверка на дубликаты
             if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
                 selectedFiles.push(file);
             }
@@ -2057,22 +2140,6 @@
         });
     }
 
-    if (proxyToggle) {
-        proxyToggle.addEventListener('click', () => {
-            settings.proxy = !settings.proxy;
-            saveSettings();
-            if (activeChatId && diskClient) {
-                diskClient.useProxy = settings.proxy;
-                loadMessages().catch(() => {});
-                if (!settings.proxy) {
-                    showWarning('Прокси отключён. Файлы и аватарки могут не загружаться.');
-                } else {
-                    showSuccess('Прокси включён');
-                }
-            }
-        });
-    }
-
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
             settings.lightTheme = !settings.lightTheme;
@@ -2190,7 +2257,57 @@
         if (e.target === avatarModal) avatarModal.style.display = 'none';
     });
 
-    // Загружаем настройки и чаты при старте
+    // Функция проверки всех прокси
+    async function checkAllProxiesHealth() {
+        console.log('🔍 Проверка доступности прокси...');
+        let workingCount = 0;
+        
+        for (let i = 0; i < PROXY_LIST.length; i++) {
+            const proxy = PROXY_LIST[i];
+            try {
+                let testUrl = 'https://cloud-api.yandex.net/v1/disk';
+                let targetUrl;
+                
+                if (!proxy.includes('?url=') && !proxy.includes('?uri=')) {
+                    const cleanProxy = proxy.replace(/\/$/, '');
+                    targetUrl = cleanProxy + '/' + encodeURIComponent(testUrl);
+                } else {
+                    targetUrl = proxy + encodeURIComponent(testUrl);
+                }
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch(targetUrl, {
+                    method: 'HEAD',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.status !== 429 && response.status !== 403) {
+                    workingCount++;
+                    console.log(`✅ Прокси #${i + 1} работает: ${proxy}`);
+                } else {
+                    console.warn(`⚠️ Прокси #${i + 1} превысил лимит: ${proxy}`);
+                }
+            } catch {
+                console.warn(`⚠️ Прокси #${i + 1} недоступен: ${proxy}`);
+            }
+        }
+        
+        if (workingCount === 0) {
+            showError('⚠️ Все прокси временно недоступны. Проверьте подключение к интернету.');
+        } else {
+            console.log(`📊 Доступно прокси: ${workingCount}/${PROXY_LIST.length}`);
+        }
+    }
+
+    // Запускаем проверку прокси через 3 секунды после загрузки
+    setTimeout(checkAllProxiesHealth, 3000);
+    // И каждые 5 минут
+    setInterval(checkAllProxiesHealth, 5 * 60 * 1000);
+
     loadSettings();
     window.addEventListener('load', loadChatsFromStorage);
 })();
