@@ -211,15 +211,39 @@
     };
 
     // ========== СООБЩЕНИЯ ==========
-    const loadMessages = async () => {
-        if (!activeChatId) return;
-        const chat = chats.find(c => c.id === activeChatId);
-        if (!chat) return;
+ const loadMessages = async () => {
+    if (!activeChatId) return;
+    const chat = chats.find(c => c.id === activeChatId);
+    if (!chat) return;
 
-        const msgs = await kvClient.getMessages(chat.seed);
+    try {
+        const apiUrl = `https://yandex-proxy-murex.vercel.app/api/messages?seed=${encodeURIComponent(chat.seed)}`;
+        console.log('📡 Загружаем сообщения с:', apiUrl); // ПОСМОТРИТЕ ЭТОТ ЛОГ В КОНСОЛИ БРАУЗЕРА
+
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('📊 Статус ответа:', response.status); // И ЭТОТ
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Текст ошибки:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const msgs = await response.json();
+        console.log('💬 Получены сообщения:', msgs); // И ЭТОТ
         messages = msgs;
         renderMessages();
-    };
+    } catch (error) {
+        console.error('❌ Ошибка загрузки сообщений:', error);
+        showError('Не удалось загрузить сообщения');
+    }
+};
 
     const renderMessages = () => {
         const container = $('messages');
