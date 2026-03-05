@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mobile Chat</title>
     <link rel="icon" href="data:,">
-    <!-- Антикеш мета-теги -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="theme-blue">
     <div id="login-screen">
@@ -20,14 +19,9 @@
             </div>
             <input type="text" id="userName" placeholder="Ваше имя (в сообщениях)" autocomplete="off">
             <div class="input-hint">Имя, которое будут видеть другие</div>
-            <input type="text" id="seedPhrase" class="seed-field" placeholder="Сид-фраза (ID группы)" autocomplete="off">
-            <div class="input-hint">Общий ID группы – все участники вводят одинаковый</div>
-            <input type="text" id="yandexToken" placeholder="Токен Яндекса (начинается с y0_...)" autocomplete="off">
-            <div class="input-hint">Токен от Яндекс.Диска (один на всех)</div>
-            <div class="token-help">
-                <p>🔑 <a href="https://yandex.ru/dev/disk/poligon/" target="_blank" rel="noopener noreferrer">Получить токен</a></p>
-            </div>
-            <button id="loginBtn">Войти в чат</button>
+            <input type="text" id="seedPhrase" class="seed-field" placeholder="ID чата (любая строка)" autocomplete="off">
+            <div class="input-hint">Общий ID для всех участников</div>
+            <button id="loginBtn">Создать/Войти в чат</button>
             <button class="cancel-btn" id="cancelLoginBtn">Отмена</button>
         </div>
     </div>
@@ -46,7 +40,6 @@
                         <span>👤</span>
                     </div>
                     <span id="currentUserDisplay"></span>
-                    <button class="change-avatar-btn" id="changeAvatarBtn" title="Сменить аватар">📷</button>
                 </div>
                 <div class="settings-item" id="settingsBtn">
                     <span>⚙️</span> Настройки
@@ -71,32 +64,21 @@
 
                 <div class="input-wrapper">
                     <div id="file-preview-container"></div>
-
-                    <!-- Голосовые сообщения временно отключены -->
-                    <div class="voice-recorder" id="voiceRecorder" style="display: none;"></div>
-
-                    <div class="quote-indicator" id="quoteIndicator" style="display: none;">
-                        <span id="quoteText"></span>
-                        <button id="cancelQuoteBtn">✖</button>
-                    </div>
-
-                    <div id="uploadIndicator" class="upload-indicator">
+                    <div id="uploadIndicator" class="upload-indicator" style="display: none;">
                         <div class="spinner"></div>
                         <span id="uploadStatusText">Загрузка...</span>
                         <span id="uploadProgress"></span>
-                        <button class="cancel-btn" id="cancelUploadBtn">Отменить</button>
                     </div>
 
                     <div class="input-area">
                         <button class="attach-btn" id="attachBtn" title="Прикрепить файлы">📎</button>
-                        <!-- Голосовые сообщения временно отключены -->
-                        <input type="file" id="fileInput" style="display: none;" multiple>
+                        <input type="file" id="fileInput" style="display: none;" accept="image/*,audio/*" multiple>
                         <input type="text" id="msgInput" placeholder="Сообщение..." autocomplete="off">
                         <button class="send-btn" id="sendBtn">➤</button>
                     </div>
 
                     <div class="markdown-hint">
-                        <span>**жирный**</span> <span>*курсив*</span> <span>`код`</span> <span>[текст](ссылка)</span>
+                        <span>**жирный**</span> <span>*курсив*</span>
                     </div>
                 </div>
             </div>
@@ -107,30 +89,11 @@
         <div class="modal-content">
             <h3>⚙️ Настройки</h3>
             <div class="settings-section">
-                <h4>Уведомления</h4>
-                <div class="setting-option" id="notificationsToggle">
-                    <span class="setting-label">Уведомления</span>
-                    <span class="setting-value" id="notificationsValue">Вкл</span>
-                </div>
-                <div class="setting-option" id="soundToggle">
-                    <span class="setting-label">Звук</span>
-                    <span class="setting-value" id="soundValue">Вкл</span>
-                </div>
-                <div class="setting-option" id="vibrationToggle">
-                    <span class="setting-label">Вибрация</span>
-                    <span class="setting-value" id="vibrationValue">Вкл</span>
+                <h4>Качество изображений</h4>
+                <div class="setting-option" id="qualityToggle">
+                    <span class="setting-label" id="qualityLabel">720p (экономно)</span>
                 </div>
             </div>
-            <div class="settings-section">
-                <h4>Модерация</h4>
-                <div class="setting-option" id="censorToggle">
-                    <span class="setting-label">Цензура (фильтр мата)</span>
-                    <span class="setting-value" id="censorValue">Выкл</span>
-                </div>
-            </div>
-            
-            <!-- Секция прокси ПОЛНОСТЬЮ УДАЛЕНА из интерфейса -->
-
             <div class="settings-section">
                 <h4>Тема оформления</h4>
                 <div class="setting-option" id="themeToggle">
@@ -168,15 +131,11 @@
             <h3>📄 Детали чата</h3>
             <div style="margin-bottom: 1rem;">
                 <strong>Имя в чате:</strong>
-                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px; word-break: break-all;" id="detailName"></div>
+                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px;" id="detailName"></div>
             </div>
             <div style="margin-bottom: 1rem;">
-                <strong>Сид-фраза (ID группы):</strong>
-                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px; word-break: break-all;" id="detailSeed"></div>
-            </div>
-            <div style="margin-bottom: 1rem;">
-                <strong>Токен:</strong>
-                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px; word-break: break-all;" id="detailToken"></div>
+                <strong>ID чата:</strong>
+                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px;" id="detailSeed"></div>
             </div>
             <div class="close-modal">
                 <button id="closeDetailsModal">Закрыть</button>
@@ -187,34 +146,16 @@
     <div id="join-chat-modal" class="modal">
         <div class="modal-content">
             <h3>🔑 Вход в группу</h3>
-            <input type="text" id="joinSeedPhrase" class="seed-field" placeholder="Сид-фраза (ID группы)" autocomplete="off">
+            <input type="text" id="joinSeedPhrase" class="seed-field" placeholder="ID чата" autocomplete="off">
             <input type="text" id="joinName" placeholder="Ваше имя" autocomplete="off">
-            <input type="text" id="joinToken" placeholder="Токен Яндекса (начинается с y0_...)" autocomplete="off">
             <button id="joinChatBtn" class="modal-btn">Войти</button>
-            <button id="createNewFromJoinBtn" class="modal-btn" style="margin-top: 0.5rem;">Создать новую группу</button>
+            <button id="createNewFromJoinBtn" class="modal-btn" style="margin-top: 0.5rem;">Создать новый чат</button>
             <div class="close-modal">
                 <button id="closeJoinModal">Отмена</button>
             </div>
         </div>
     </div>
 
-    <div id="avatar-modal" class="modal">
-        <div class="modal-content">
-            <h3>📷 Смена аватара</h3>
-            <div class="avatar-preview">
-                <img id="avatarPreview" src="" alt="Превью" style="max-width: 150px; max-height: 150px; border-radius: 50%; margin: 0 auto 1rem; display: none;">
-            </div>
-            <input type="file" id="avatarInput" accept="image/*">
-            <div class="avatar-hint">Выберите изображение (до 2 МБ)</div>
-            <button id="uploadAvatarBtn" class="modal-btn">Загрузить</button>
-            <button id="removeAvatarBtn" class="modal-btn" style="background: #b33; margin-top: 0.5rem;">Удалить аватар</button>
-            <div class="close-modal">
-                <button id="closeAvatarModal">Отмена</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    <script src="script.js?v=3.0"></script>
+    <script src="script.js"></script>
 </body>
 </html>
