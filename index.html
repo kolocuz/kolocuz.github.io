@@ -2,98 +2,138 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>MrPack → ZIP конвертер</title>
+    <title>mrpack → zip</title>
     <style>
-        body { font-family: Arial; max-width: 500px; margin: 50px auto; text-align: center; }
-        .dropzone { border: 3px dashed #aaa; border-radius: 20px; padding: 40px; background: #fafafa; cursor: pointer; }
-        .dropzone:hover { background: #eef; border-color: #66f; }
-        button { margin-top: 20px; padding: 15px 40px; font-size: 18px; background: #4caf50; color: white; border: none; border-radius: 10px; cursor: pointer; display: none; }
-        button:hover { background: #45a049; }
-        #status { margin-top: 15px; color: #666; }
-        a { color: #2196f3; }
+        body { background: #1a1a1a; color: #ddd; font-family: monospace; max-width: 600px; margin: 20px auto; padding: 15px; }
+        .zone { border: 2px dashed #555; background: #222; padding: 30px; text-align: center; cursor: pointer; border-radius: 8px; }
+        .zone:hover { border-color: #888; background: #2a2a2a; }
+        button { background: #333; color: #fff; border: 1px solid #555; padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 6px; width: 100%; margin: 15px 0; }
+        button:enabled { background: #4caf50; border-color: #4caf50; color: #000; font-weight: bold; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        progress { width: 100%; height: 20px; border-radius: 0; background: #333; }
+        progress::-webkit-progress-bar { background: #333; }
+        progress::-webkit-progress-value { background: #4caf50; }
+        #log { background: #111; padding: 10px; height: 180px; overflow-y: auto; font-size: 12px; border: 1px solid #333; margin-top: 15px; }
+        .info { color: #aaa; }
+        .ok { color: #4caf50; }
+        .err { color: #f44336; }
+        input { display: none; }
     </style>
 </head>
 <body>
-    <h2>🎮 MrPack → ZIP (для стримера)</h2>
-    <div class="dropzone" id="dropzone">
-        <p>📁 Перетащи .mrpack сюда<br>или кликни чтобы выбрать</p>
-        <input type="file" id="fileInput" accept=".mrpack" style="display: none;">
-    </div>
-    <button id="convertBtn">⚡ Конвертировать и скачать</button>
-    <div id="status"></div>
+    <h3>📦 MRPACK → CLEAN ZIP</h3>
+    <div class="zone" id="zone">Перетащи .mrpack или кликни</div>
+    <input type="file" id="fileInput" accept=".mrpack">
+    <div id="info"></div>
+    <button id="buildBtn" disabled>Собрать архив</button>
+    <progress id="progress" value="0" max="100" style="display:none;"></progress>
+    <div id="log"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script>
-        const dropzone = document.getElementById('dropzone');
-        const fileInput = document.getElementById('fileInput');
-        const convertBtn = document.getElementById('convertBtn');
-        const statusDiv = document.getElementById('status');
-        let selectedFile = null;
+        const zone = document.getElementById('zone');
+        const input = document.getElementById('fileInput');
+        const info = document.getElementById('info');
+        const btn = document.getElementById('buildBtn');
+        const prog = document.getElementById('progress');
+        const logDiv = document.getElementById('log');
 
-        dropzone.addEventListener('click', () => fileInput.click());
-        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.background = '#eef'; });
-        dropzone.addEventListener('dragleave', () => dropzone.style.background = '#fafafa');
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.style.background = '#fafafa';
-            const file = e.dataTransfer.files[0];
-            if (file && file.name.endsWith('.mrpack')) { setFile(file); }
-            else { statusDiv.innerHTML = '❌ Только .mrpack файлы!'; }
-        });
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) { setFile(file); }
-        });
+        let pack = null;
 
-        function setFile(file) {
-            selectedFile = file;
-            dropzone.innerHTML = `<p>✅ Выбран: <strong>${file.name}</strong><br><small>${(file.size/1024).toFixed(1)} КБ</small></p>`;
-            convertBtn.style.display = 'block';
-            statusDiv.innerHTML = '';
+        function log(msg, cls='info') {
+            const d = document.createElement('div');
+            d.className = cls;
+            d.textContent = `> ${msg}`;
+            logDiv.appendChild(d);
+            logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        convertBtn.addEventListener('click', async () => {
-            if (!selectedFile) return;
-            statusDiv.innerHTML = '⏳ Обработка...';
-            
+        zone.addEventListener('click', () => input.click());
+        zone.addEventListener('dragover', e => e.preventDefault());
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            const f = e.dataTransfer.files[0];
+            if (f?.name.endsWith('.mrpack')) load(f);
+        });
+        input.addEventListener('change', e => {
+            if (e.target.files[0]) load(e.target.files[0]);
+        });
+
+        async function load(f) {
+            info.textContent = `📁 ${f.name} (${(f.size/1024).toFixed(0)}kb)`;
+            btn.disabled = true;
+            log(`Чтение ${f.name}`, 'info');
             try {
-                const zip = await JSZip.loadAsync(selectedFile);
-                
-                // Создаём новый ZIP, куда положим всё содержимое mrpack
-                const outZip = new JSZip();
-                
-                // Копируем ВСЕ файлы из mrpack в корень нового zip
-                const promises = [];
-                zip.forEach((relativePath, file) => {
-                    if (!file.dir) {
-                        promises.push(
-                            file.async('blob').then(data => {
-                                outZip.file(relativePath, data);
-                            })
-                        );
-                    }
-                });
-                
-                await Promise.all(promises);
-                
-                // Генерируем ZIP и скачиваем
-                const content = await outZip.generateAsync({ type: 'blob' });
-                const url = URL.createObjectURL(content);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = selectedFile.name.replace('.mrpack', '.zip');
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                statusDiv.innerHTML = '✅ Готово! ZIP скачан.';
-            } catch (err) {
-                statusDiv.innerHTML = '❌ Ошибка: ' + err.message;
+                const zip = await JSZip.loadAsync(f);
+                const mf = zip.file("modrinth.index.json");
+                if(!mf) throw new Error('modrinth.index.json не найден');
+                const manifest = JSON.parse(await mf.async("string"));
+                pack = { zip, manifest };
+                log(`Найдено модов: ${manifest.files?.length || 0}`, 'ok');
+                btn.disabled = false;
+            } catch(e) {
+                log(`Ошибка: ${e.message}`, 'err');
             }
+        }
+
+        btn.addEventListener('click', async () => {
+            if(!pack) return;
+            btn.disabled = true;
+            prog.style.display = 'block';
+            prog.value = 0;
+            logDiv.innerHTML = '';
+            log('Старт сборки...', 'ok');
+
+            const out = new JSZip();
+            const files = pack.manifest.files || [];
+            const total = files.length;
+            let ok = 0, fail = 0;
+
+            for(let i=0; i<files.length; i++) {
+                const m = files[i];
+                prog.value = ((i+1)/total)*100;
+                
+                if(m.env?.client === 'unsupported') {
+                    log(`Пропущен (server): ${m.path}`, 'info');
+                    continue;
+                }
+                try {
+                    const url = m.downloads?.[0];
+                    if(!url) throw new Error('Нет ссылки');
+                    log(`Загрузка: ${m.path.split('/').pop()}`, 'info');
+                    const res = await fetch(url);
+                    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+                    out.file(m.path, await res.blob());
+                    ok++;
+                } catch(e) {
+                    log(`Ошибка: ${m.path} - ${e.message}`, 'err');
+                    fail++;
+                }
+            }
+
+            log('Копирование конфигов (overrides)...', 'info');
+            for(let [p, f] of Object.entries(pack.zip.files)) {
+                if(p.startsWith('overrides/') && !f.dir) {
+                    const target = p.replace('overrides/', '');
+                    out.file(target, await f.async('blob'));
+                    log(`  ${target}`, 'ok');
+                }
+            }
+
+            log(`Упаковка ZIP... (успешно: ${ok}, ошибок: ${fail})`, 'ok');
+            const blob = await out.generateAsync({type:'blob'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = pack.manifest.name?.replace(/[^a-z0-9]/gi,'_') || 'pack';
+            a.download += '.zip';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            prog.style.display = 'none';
+            btn.disabled = false;
+            log('Готово!', 'ok');
         });
     </script>
-    <hr>
-    <p style="font-size: 12px; color: #999;">Просто перетащи .mrpack → нажми кнопку → получи .zip<br>Внутри ZIP будут папки mods, config и manifest.json</p>
 </body>
 </html>
