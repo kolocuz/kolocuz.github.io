@@ -1,161 +1,99 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mobile Chat</title>
-    <link rel="icon" href="data:,">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="style.css">
+    <title>MrPack → ZIP конвертер</title>
+    <style>
+        body { font-family: Arial; max-width: 500px; margin: 50px auto; text-align: center; }
+        .dropzone { border: 3px dashed #aaa; border-radius: 20px; padding: 40px; background: #fafafa; cursor: pointer; }
+        .dropzone:hover { background: #eef; border-color: #66f; }
+        button { margin-top: 20px; padding: 15px 40px; font-size: 18px; background: #4caf50; color: white; border: none; border-radius: 10px; cursor: pointer; display: none; }
+        button:hover { background: #45a049; }
+        #status { margin-top: 15px; color: #666; }
+        a { color: #2196f3; }
+    </style>
 </head>
-<body class="theme-blue">
-    <div id="login-screen">
-        <div class="login-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin-bottom: 0;">🔐 Новый чат</h2>
-                <button id="loginSettingsBtn" style="background: transparent; border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary);">⚙️</button>
-            </div>
-            <input type="text" id="userName" placeholder="Ваше имя (в сообщениях)" autocomplete="off">
-            <div class="input-hint">Имя, которое будут видеть другие</div>
-            <input type="text" id="seedPhrase" class="seed-field" placeholder="ID чата (любая строка)" autocomplete="off">
-            <div class="input-hint">Общий ID для всех участников</div>
-            <button id="loginBtn">Создать/Войти в чат</button>
-            <button class="cancel-btn" id="cancelLoginBtn">Отмена</button>
-        </div>
+<body>
+    <h2>🎮 MrPack → ZIP (для стримера)</h2>
+    <div class="dropzone" id="dropzone">
+        <p>📁 Перетащи .mrpack сюда<br>или кликни чтобы выбрать</p>
+        <input type="file" id="fileInput" accept=".mrpack" style="display: none;">
     </div>
+    <button id="convertBtn">⚡ Конвертировать и скачать</button>
+    <div id="status"></div>
 
-    <div id="chat-screen">
-        <div class="main-container">
-            <div class="sidebar" id="sidebar">
-                <div class="sidebar-header">
-                    <span>Чаты</span>
-                    <button class="add-chat-btn" id="addChatBtn">+</button>
-                </div>
-                <div id="chat-list" class="chat-list"></div>
-                <div class="current-user-info" id="currentUserInfo">
-                    <div class="current-user-avatar" id="currentUserAvatar">
-                        <img src="" alt="" style="display: none;">
-                        <span>👤</span>
-                    </div>
-                    <span id="currentUserDisplay"></span>
-                </div>
-                <div class="settings-item" id="settingsBtn">
-                    <span>⚙️</span> Настройки
-                </div>
-            </div>
-            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const statusDiv = document.getElementById('status');
+        let selectedFile = null;
 
-            <div class="chat-area">
-                <div class="header">
-                    <button class="menu-btn" id="menuBtn">☰</button>
-                    <span class="header-title" id="display-name"></span>
-                    <div class="header-controls">
-                        <button id="participantsBtn" title="Участники">👥</button>
-                        <button id="refreshBtn" title="Обновить">⟳</button>
-                    </div>
-                </div>
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.background = '#eef'; });
+        dropzone.addEventListener('dragleave', () => dropzone.style.background = '#fafafa');
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.background = '#fafafa';
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.mrpack')) { setFile(file); }
+            else { statusDiv.innerHTML = '❌ Только .mrpack файлы!'; }
+        });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) { setFile(file); }
+        });
 
-                <div class="pinned-messages" id="pinnedContainer" style="display: none;"></div>
-                <div class="typing-indicator" id="typingIndicator"></div>
-                <div class="ptr-indicator" id="ptrIndicator">⬇️ Потяните для обновления</div>
-                <div id="messages"></div>
+        function setFile(file) {
+            selectedFile = file;
+            dropzone.innerHTML = `<p>✅ Выбран: <strong>${file.name}</strong><br><small>${(file.size/1024).toFixed(1)} КБ</small></p>`;
+            convertBtn.style.display = 'block';
+            statusDiv.innerHTML = '';
+        }
 
-                <div class="input-wrapper">
-                    <div id="file-preview-container"></div>
-                    <div id="uploadIndicator" class="upload-indicator" style="display: none;">
-                        <div class="spinner"></div>
-                        <span id="uploadStatusText">Загрузка...</span>
-                        <span id="uploadProgress"></span>
-                    </div>
-
-                    <div class="input-area">
-                        <button class="attach-btn" id="attachBtn" title="Прикрепить файлы">📎</button>
-                        <input type="file" id="fileInput" style="display: none;" accept="image/*,audio/*" multiple>
-                        <input type="text" id="msgInput" placeholder="Сообщение..." autocomplete="off">
-                        <button class="send-btn" id="sendBtn">➤</button>
-                    </div>
-
-                    <div class="markdown-hint">
-                        <span>**жирный**</span> <span>*курсив*</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <h3>⚙️ Настройки</h3>
-            <div class="settings-section">
-                <h4>Качество изображений</h4>
-                <div class="setting-option" id="qualityToggle">
-                    <span class="setting-label" id="qualityLabel">720p (экономно)</span>
-                </div>
-            </div>
-            <div class="settings-section">
-                <h4>Тема оформления</h4>
-                <div class="setting-option" id="themeToggle">
-                    <span class="setting-label" id="themeLabel">Переключить на светлую тему</span>
-                </div>
-            </div>
-            <div class="settings-section">
-                <h4>Цвет акцента</h4>
-                <div class="theme-grid">
-                    <div class="theme-option" data-theme="blue">🔵 Синий</div>
-                    <div class="theme-option" data-theme="green">🟢 Зелёный</div>
-                    <div class="theme-option" data-theme="purple">🟣 Фиолетовый</div>
-                    <div class="theme-option" data-theme="gray">⚫ Серый</div>
-                </div>
-            </div>
-            <button class="reset-btn" id="resetSettingsBtn">Сбросить настройки</button>
-            <div class="close-modal">
-                <button id="closeSettingsModal">Закрыть</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="participants-modal" class="modal">
-        <div class="modal-content">
-            <h3>Участники чата</h3>
-            <ul id="participants-list"></ul>
-            <div class="close-modal">
-                <button id="closeParticipantsModal">Закрыть</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="chat-details-modal" class="modal">
-        <div class="modal-content">
-            <h3>📄 Детали чата</h3>
-            <div style="margin-bottom: 1rem;">
-                <strong>Имя в чате:</strong>
-                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px;" id="detailName"></div>
-            </div>
-            <div style="margin-bottom: 1rem;">
-                <strong>ID чата:</strong>
-                <div style="background: var(--bg-input); padding: 0.5rem; border-radius: 8px; margin-top: 4px;" id="detailSeed"></div>
-            </div>
-            <div class="close-modal">
-                <button id="closeDetailsModal">Закрыть</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="join-chat-modal" class="modal">
-        <div class="modal-content">
-            <h3>🔑 Вход в группу</h3>
-            <input type="text" id="joinSeedPhrase" class="seed-field" placeholder="ID чата" autocomplete="off">
-            <input type="text" id="joinName" placeholder="Ваше имя" autocomplete="off">
-            <button id="joinChatBtn" class="modal-btn">Войти</button>
-            <button id="createNewFromJoinBtn" class="modal-btn" style="margin-top: 0.5rem;">Создать новый чат</button>
-            <div class="close-modal">
-                <button id="closeJoinModal">Отмена</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+        convertBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            statusDiv.innerHTML = '⏳ Обработка...';
+            
+            try {
+                const zip = await JSZip.loadAsync(selectedFile);
+                
+                // Создаём новый ZIP, куда положим всё содержимое mrpack
+                const outZip = new JSZip();
+                
+                // Копируем ВСЕ файлы из mrpack в корень нового zip
+                const promises = [];
+                zip.forEach((relativePath, file) => {
+                    if (!file.dir) {
+                        promises.push(
+                            file.async('blob').then(data => {
+                                outZip.file(relativePath, data);
+                            })
+                        );
+                    }
+                });
+                
+                await Promise.all(promises);
+                
+                // Генерируем ZIP и скачиваем
+                const content = await outZip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = selectedFile.name.replace('.mrpack', '.zip');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                statusDiv.innerHTML = '✅ Готово! ZIP скачан.';
+            } catch (err) {
+                statusDiv.innerHTML = '❌ Ошибка: ' + err.message;
+            }
+        });
+    </script>
+    <hr>
+    <p style="font-size: 12px; color: #999;">Просто перетащи .mrpack → нажми кнопку → получи .zip<br>Внутри ZIP будут папки mods, config и manifest.json</p>
 </body>
 </html>
