@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VulkanLight — Галерея скриншотов</title>
+    <title>VulkanLight — Галерея</title>
     <style>
         * {
             margin: 0;
@@ -12,19 +12,12 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            color: #eee;
-            min-height: 100vh;
+            background: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             padding: 2rem;
+            color: #e0e0e0;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Заголовок */
         .header {
             text-align: center;
             margin-bottom: 3rem;
@@ -32,24 +25,15 @@
 
         .header h1 {
             font-size: 2.5rem;
-            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            background: linear-gradient(135deg, #ff6600, #ff2200);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 0.5rem;
         }
 
         .header p {
-            color: #aaa;
-            font-size: 1rem;
-        }
-
-        /* Счётчик */
-        .counter {
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 0.9rem;
-            color: #ff8c42;
+            color: #888;
+            margin-top: 0.5rem;
         }
 
         /* Сетка галереи */
@@ -57,45 +41,50 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        /* Карточка изображения */
+        /* Карточка */
         .card {
-            background: rgba(30, 30, 40, 0.8);
+            background: #1a1a1a;
             border-radius: 16px;
             overflow: hidden;
-            backdrop-filter: blur(4px);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
-            border: 1px solid rgba(255, 140, 66, 0.2);
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
-            border-color: #ff6b35;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
 
-        /* Превью изображения */
         .card img {
             width: 100%;
-            height: 220px;
+            height: 200px;
             object-fit: cover;
             display: block;
-            background: #1a1a2e;
+            background: #2a2a2a;
         }
 
-        /* Информация о файле */
-        .card-info {
-            padding: 0.75rem 1rem;
-            font-size: 0.8rem;
-            color: #aaa;
-            display: flex;
-            justify-content: space-between;
-            border-top: 1px solid rgba(255,255,255,0.1);
+        .card .info {
+            padding: 1rem;
         }
 
-        /* Модальное окно (увеличенный просмотр) */
+        .card .filename {
+            font-size: 0.85rem;
+            color: #ff884d;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .card .path {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        /* Модальное окно (увеличенное фото) */
         .modal {
             display: none;
             position: fixed;
@@ -115,212 +104,205 @@
         }
 
         .modal img {
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 90vw;
+            max-height: 90vh;
             object-fit: contain;
             border-radius: 8px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
 
-        .close-btn {
+        .modal .raw-link {
             position: absolute;
-            top: 20px;
-            right: 30px;
-            font-size: 2rem;
-            color: white;
-            cursor: pointer;
-            background: none;
-            border: none;
-            z-index: 1001;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #ff884d;
+            text-decoration: none;
+            font-family: monospace;
         }
 
-        /* Сообщение об ошибке */
-        .error {
+        .modal .raw-link:hover {
+            background: #ff6600;
+            color: #000;
+        }
+
+        .loading {
             text-align: center;
             padding: 3rem;
-            background: rgba(255,0,0,0.1);
-            border-radius: 16px;
-            color: #ff6b6b;
+            color: #888;
         }
 
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
-            .gallery {
-                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-                gap: 1rem;
-            }
-            .header h1 {
-                font-size: 1.8rem;
-            }
-        }
-
-        /* Стиль для ссылки на GitHub */
         .footer {
             text-align: center;
             margin-top: 3rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 2rem;
+            border-top: 1px solid #2a2a2a;
+            color: #555;
             font-size: 0.8rem;
-            color: #666;
-        }
-
-        .footer a {
-            color: #ff8c42;
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>🔥 VulkanLight</h1>
-        <p>Галерея скриншотов — производительность, стабильность, честные цифры</p>
-    </div>
-
-    <div class="counter" id="counter">Загрузка изображений...</div>
-
-    <div class="gallery" id="gallery">
-        <div class="error">📂 Загрузка... Убедитесь, что папка <strong>/images/</strong> существует и содержит изображения.</div>
-    </div>
-
-    <div class="footer">
-        <a href="https://github.com/ваш-аккаунт/vulkanlight" target="_blank">GitHub репозиторий</a> • 
-        <a href="https://modrinth.com/modpack/vulkanlight" target="_blank">Страница на Modrinth</a>
-    </div>
+<div class="header">
+    <h1>🔥 VulkanLight</h1>
+    <p>Галерея скриншотов | Кликни по картинке для увеличения</p>
 </div>
 
-<!-- Модальное окно для увеличенного просмотра -->
+<div class="gallery" id="gallery">
+    <div class="loading">Загрузка изображений...</div>
+</div>
+
+<div class="footer">
+    VulkanLight — легковесная сборка на VulkanMod
+</div>
+
+<!-- Модальное окно -->
 <div class="modal" id="modal">
-    <button class="close-btn" id="closeBtn">&times;</button>
-    <img id="modalImage" src="" alt="Увеличенное изображение">
+    <img id="modalImage" alt="Preview">
+    <a href="#" id="rawLink" class="raw-link" target="_blank">📷 Открыть RAW</a>
 </div>
 
 <script>
-    // Поддерживаемые форматы
-    const SUPPORTED_FORMATS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp'];
-
-    // Функция для получения всех изображений из папки /images/
-    async function loadGallery() {
-        const galleryDiv = document.getElementById('gallery');
-        const counterSpan = document.getElementById('counter');
-
-        // Пробуем загрузить список файлов через GitHub API (если репозиторий публичный)
-        // Или просто пробуем перебирать имена (костыль, но рабочий для простых случаев)
-        // Второй вариант: используем .json файл с описанием изображений
+    // 📁 Настройки — измени под свою структуру
+    const GITHUB_USER = "YOUR_USERNAME";      // твой GitHub ник
+    const GITHUB_REPO = "YOUR_REPO";          // название репозитория
+    const BRANCH = "main";                    // ветка (main или master)
+    
+    // Корневые папки с картинками (можно добавить несколько)
+    const IMAGE_ROOTS = [
+        "images",           // основная папка
+        "images/screenshots",
+        "images/comparison"
+    ];
+    
+    // Поддерживаемые расширения
+    const SUPPORTED_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
+    
+    // 🔧 Автоматически определяем режим (GitHub Pages или локальный)
+    const isGitHub = window.location.hostname.includes('github.io');
+    
+    function buildRawUrl(path) {
+        if (isGitHub) {
+            return `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${BRANCH}/${path}`;
+        } else {
+            return path; // локально — просто путь
+        }
+    }
+    
+    async function loadImagesFromFolder(folderPath) {
+        const images = [];
         
-        // Для GitHub Pages лучше заранее создать файл images/list.json с перечнем файлов
-        // Но если его нет — будем пробовать стандартные имена
-        
-        const imagesList = [];
-        
-        // Вариант 1: Если есть list.json (рекомендуется)
-        try {
-            const response = await fetch('images/list.json');
-            if (response.ok) {
-                const data = await response.json();
-                imagesList.push(...data);
-            } else {
-                throw new Error('Нет list.json');
-            }
-        } catch (e) {
-            // Вариант 2: Ручное указание изображений (для простоты — несколько популярных имён)
-            // Ты можешь дописать свои имена вручную
-            const knownNames = [
-                'screenshot1', 'screenshot2', 'screenshot3', 'screenshot4', 'screenshot5',
-                'fps_test', 'gpu_load', 'frametime', 'showcase', 'preview'
-            ];
-            
-            for (const name of knownNames) {
-                for (const ext of SUPPORTED_FORMATS) {
-                    const imgPath = `images/${name}.${ext}`;
-                    try {
-                        const testResponse = await fetch(imgPath, { method: 'HEAD' });
-                        if (testResponse.ok) {
-                            imagesList.push(imgPath);
-                            break;
+        if (isGitHub) {
+            // GitHub API: получаем содержимое папки
+            const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${folderPath}?ref=${BRANCH}`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) return images;
+                const files = await response.json();
+                
+                for (const file of files) {
+                    if (file.type === 'file') {
+                        const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+                        if (SUPPORTED_EXT.includes(ext)) {
+                            images.push({
+                                name: file.name,
+                                path: file.path,
+                                url: file.download_url,
+                                rawUrl: file.download_url
+                            });
                         }
-                    } catch (err) {
-                        // просто продолжаем
+                    } else if (file.type === 'dir') {
+                        // Рекурсивно заходим в подпапки
+                        const subImages = await loadImagesFromFolder(file.path);
+                        images.push(...subImages);
                     }
                 }
+            } catch (e) {
+                console.warn(`Не удалось загрузить ${folderPath}:`, e);
+            }
+        } else {
+            // Локальный режим: не можем автоматически сканировать, используем фиксированный список
+            // Просто показываем заглушку
+            console.log("Локальный режим: добавь пути вручную или используй GitHub Pages");
+        }
+        
+        return images;
+    }
+    
+    async function loadAllImages() {
+        let allImages = [];
+        
+        for (const root of IMAGE_ROOTS) {
+            const images = await loadImagesFromFolder(root);
+            allImages.push(...images);
+        }
+        
+        // Убираем дубликаты по path
+        const unique = new Map();
+        for (const img of allImages) {
+            if (!unique.has(img.path)) {
+                unique.set(img.path, img);
             }
         }
         
-        if (imagesList.length === 0) {
-            galleryDiv.innerHTML = `<div class="error">❌ Не найдено ни одного изображения!<br><br>
-            📁 Поместите файлы в папку <strong>/images/</strong><br>
-            📄 Форматы: ${SUPPORTED_FORMATS.join(', ')}<br>
-            🔧 Для удобства создайте файл <strong>images/list.json</strong> с массивом путей к изображениям.</div>`;
-            counterSpan.textContent = 'Изображений не найдено';
+        return Array.from(unique.values());
+    }
+    
+    function renderGallery(images) {
+        const gallery = document.getElementById('gallery');
+        
+        if (images.length === 0) {
+            gallery.innerHTML = '<div class="loading">📭 Изображений не найдено. Проверь папку images/</div>';
             return;
         }
         
-        counterSpan.textContent = `📸 Всего изображений: ${imagesList.length}`;
+        gallery.innerHTML = images.map(img => `
+            <div class="card" data-url="${img.url}" data-raw="${img.rawUrl}">
+                <img src="${img.url}" loading="lazy" alt="${img.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Crect width=%22100%25%22 height=%22100%25%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E🖼️%3C/text%3E%3C/svg%3E'">
+                <div class="info">
+                    <div class="filename">📷 ${img.name}</div>
+                    <div class="path">📁 ${img.path}</div>
+                </div>
+            </div>
+        `).join('');
         
-        // Отображаем карточки
-        galleryDiv.innerHTML = '';
-        
-        imagesList.forEach(imgPath => {
-            // Определяем имя файла без пути
-            const fileName = imgPath.split('/').pop();
-            const fileSize = '(размер неизвестен)';
-            
-            const card = document.createElement('div');
-            card.className = 'card';
-            
-            const img = document.createElement('img');
-            img.src = imgPath;
-            img.alt = fileName;
-            img.loading = 'lazy';
-            img.onerror = () => {
-                img.style.opacity = '0.5';
-                img.style.minHeight = '200px';
-                img.alt = 'Не удалось загрузить';
-            };
-            
-            const info = document.createElement('div');
-            info.className = 'card-info';
-            info.innerHTML = `<span>📷 ${fileName}</span><span>🖱️ Клик для увеличения</span>`;
-            
-            card.appendChild(img);
-            card.appendChild(info);
-            
-            // Клик по карточке — открыть увеличенное изображение
+        // Вешаем обработчики на карточки
+        document.querySelectorAll('.card').forEach(card => {
             card.addEventListener('click', () => {
-                const modal = document.getElementById('modal');
-                const modalImg = document.getElementById('modalImage');
-                modalImg.src = imgPath;
-                modal.classList.add('active');
+                const url = card.dataset.url;
+                const raw = card.dataset.raw;
+                openModal(url, raw);
             });
-            
-            galleryDiv.appendChild(card);
         });
     }
     
-    // Закрытие модального окна
-    const modal = document.getElementById('modal');
-    const closeBtn = document.getElementById('closeBtn');
+    function openModal(imageUrl, rawUrl) {
+        const modal = document.getElementById('modal');
+        const modalImage = document.getElementById('modalImage');
+        const rawLink = document.getElementById('rawLink');
+        
+        modalImage.src = imageUrl;
+        rawLink.href = rawUrl;
+        modal.classList.add('active');
+    }
     
-    closeBtn.addEventListener('click', () => {
+    function closeModal() {
+        const modal = document.getElementById('modal');
         modal.classList.remove('active');
-    });
+    }
     
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
-    });
+    // Запуск
+    (async () => {
+        const images = await loadAllImages();
+        renderGallery(images);
+    })();
     
-    // Загрузка галереи при старте
-    loadGallery();
+    // Закрытие модального окна
+    document.getElementById('modal').addEventListener('click', closeModal);
+    document.getElementById('modalImage').addEventListener('click', (e) => e.stopPropagation());
 </script>
 </body>
 </html>
