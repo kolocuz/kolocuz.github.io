@@ -10,19 +10,16 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             background: #0a0a0a;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             padding: 2rem;
             color: #e0e0e0;
         }
-
         .header {
             text-align: center;
             margin-bottom: 3rem;
         }
-
         .header h1 {
             font-size: 2.5rem;
             background: linear-gradient(135deg, #ff6600, #ff2200);
@@ -30,46 +27,38 @@
             background-clip: text;
             color: transparent;
         }
-
         .gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             max-width: 1400px;
             margin: 0 auto;
         }
-
         .card {
             background: #1a1a1a;
             border-radius: 16px;
             overflow: hidden;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
         }
-
         .card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
-
         .card img {
             width: 100%;
-            height: 200px;
+            height: 180px;
             object-fit: cover;
             display: block;
         }
-
         .card .info {
-            padding: 1rem;
+            padding: 0.75rem 1rem;
         }
-
         .card .filename {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #ff884d;
             font-family: monospace;
+            word-break: break-all;
         }
-
-        /* Модальное окно */
         .modal {
             display: none;
             position: fixed;
@@ -83,24 +72,24 @@
             align-items: center;
             cursor: pointer;
         }
-
         .modal.active {
             display: flex;
         }
-
         .modal img {
             max-width: 90vw;
             max-height: 90vh;
             object-fit: contain;
         }
-
         .footer {
             text-align: center;
             margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid #2a2a2a;
             color: #555;
             font-size: 0.8rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
         }
     </style>
 </head>
@@ -108,10 +97,12 @@
 
 <div class="header">
     <h1>🔥 VulkanLight</h1>
-    <p>Галерея скриншотов | Кликни для увеличения</p>
+    <p>Галерея скриншотов | Автообновление из папки images</p>
 </div>
 
-<div class="gallery" id="gallery"></div>
+<div class="gallery" id="gallery">
+    <div class="loading">📡 Загрузка списка изображений...</div>
+</div>
 
 <div class="footer">
     VulkanLight — легковесная сборка на VulkanMod
@@ -122,66 +113,54 @@
 </div>
 
 <script>
-    // 📸 Список твоих фото — ДОБАВЛЯЙ СЮДА!
-    // Формат: "папка/имя_файла.png" или просто "имя_файла.png"
-    const images = [
-        // Примеры (замени на свои):
-        "images/скрин1.png",
-        "images/скрин2.jpg",
-        "images/сравнение/sodium.png",
-        "images/сравнение/vulkan.png"
-    ];
-
-    // Функция получения имени файла из пути
-    function getFileName(path) {
-        return path.split('/').pop();
-    }
-
-    // Рендер галереи
-    function renderGallery() {
+    async function loadGallery() {
         const gallery = document.getElementById('gallery');
         
-        if (images.length === 0) {
-            gallery.innerHTML = '<div style="text-align:center;padding:3rem;">📭 Нет фото. Добавь пути в массив images</div>';
-            return;
-        }
-        
-        gallery.innerHTML = images.map(imgPath => `
-            <div class="card" data-url="${imgPath}">
-                <img src="${imgPath}" loading="lazy" alt="${getFileName(imgPath)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E❌%3C/text%3E%3C/svg%3E'">
-                <div class="info">
-                    <div class="filename">📷 ${getFileName(imgPath)}</div>
-                </div>
-            </div>
-        `).join('');
-        
-        // Вешаем обработчики
-        document.querySelectorAll('.card').forEach(card => {
-            card.addEventListener('click', () => {
-                const url = card.dataset.url;
-                openModal(url);
+        try {
+            // Загружаем список из images.json
+            const response = await fetch('images.json');
+            if (!response.ok) throw new Error('Нет images.json');
+            const images = await response.json();
+            
+            if (images.length === 0) {
+                gallery.innerHTML = '<div class="loading">📭 Нет фото в папке images/</div>';
+                return;
+            }
+            
+            gallery.innerHTML = images.map(path => {
+                const filename = path.split('/').pop();
+                return `
+                    <div class="card" data-url="${path}">
+                        <img src="${path}" loading="lazy" alt="${filename}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E❌%3C/text%3E%3C/svg%3E'">
+                        <div class="info">
+                            <div class="filename">📷 ${filename}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Обработчики кликов
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const url = card.dataset.url;
+                    document.getElementById('modalImage').src = url;
+                    document.getElementById('modal').classList.add('active');
+                });
             });
-        });
+            
+        } catch (err) {
+            gallery.innerHTML = '<div class="loading">⚠️ Ошибка: нет images.json. Сделай push в ветку main, GitHub Action создаст файл.</div>';
+            console.error(err);
+        }
     }
     
-    function openModal(imageUrl) {
-        const modal = document.getElementById('modal');
-        const modalImage = document.getElementById('modalImage');
-        modalImage.src = imageUrl;
-        modal.classList.add('active');
-    }
-    
-    function closeModal() {
-        const modal = document.getElementById('modal');
-        modal.classList.remove('active');
-    }
-    
-    // Запуск
-    renderGallery();
-    
-    // Закрытие модального окна
-    document.getElementById('modal').addEventListener('click', closeModal);
+    // Закрытие модалки
+    document.getElementById('modal').addEventListener('click', () => {
+        document.getElementById('modal').classList.remove('active');
+    });
     document.getElementById('modalImage').addEventListener('click', (e) => e.stopPropagation());
+    
+    loadGallery();
 </script>
 </body>
 </html>
