@@ -1,139 +1,326 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>mrpack → zip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulkanLight — Галерея скриншотов</title>
     <style>
-        body { background: #1a1a1a; color: #ddd; font-family: monospace; max-width: 600px; margin: 20px auto; padding: 15px; }
-        .zone { border: 2px dashed #555; background: #222; padding: 30px; text-align: center; cursor: pointer; border-radius: 8px; }
-        .zone:hover { border-color: #888; background: #2a2a2a; }
-        button { background: #333; color: #fff; border: 1px solid #555; padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 6px; width: 100%; margin: 15px 0; }
-        button:enabled { background: #4caf50; border-color: #4caf50; color: #000; font-weight: bold; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        progress { width: 100%; height: 20px; border-radius: 0; background: #333; }
-        progress::-webkit-progress-bar { background: #333; }
-        progress::-webkit-progress-value { background: #4caf50; }
-        #log { background: #111; padding: 10px; height: 180px; overflow-y: auto; font-size: 12px; border: 1px solid #333; margin-top: 15px; }
-        .info { color: #aaa; }
-        .ok { color: #4caf50; }
-        .err { color: #f44336; }
-        input { display: none; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            color: #eee;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Заголовок */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #aaa;
+            font-size: 1rem;
+        }
+
+        /* Счётчик */
+        .counter {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: #ff8c42;
+        }
+
+        /* Сетка галереи */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Карточка изображения */
+        .card {
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255, 140, 66, 0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+            border-color: #ff6b35;
+        }
+
+        /* Превью изображения */
+        .card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            display: block;
+            background: #1a1a2e;
+        }
+
+        /* Информация о файле */
+        .card-info {
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Модальное окно (увеличенный просмотр) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+            z-index: 1001;
+        }
+
+        /* Сообщение об ошибке */
+        .error {
+            text-align: center;
+            padding: 3rem;
+            background: rgba(255,0,0,0.1);
+            border-radius: 16px;
+            color: #ff6b6b;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                gap: 1rem;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Стиль для ссылки на GitHub */
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .footer a {
+            color: #ff8c42;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-    <h3>📦 MRPACK → CLEAN ZIP</h3>
-    <div class="zone" id="zone">Перетащи .mrpack или кликни</div>
-    <input type="file" id="fileInput" accept=".mrpack">
-    <div id="info"></div>
-    <button id="buildBtn" disabled>Собрать архив</button>
-    <progress id="progress" value="0" max="100" style="display:none;"></progress>
-    <div id="log"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script>
-        const zone = document.getElementById('zone');
-        const input = document.getElementById('fileInput');
-        const info = document.getElementById('info');
-        const btn = document.getElementById('buildBtn');
-        const prog = document.getElementById('progress');
-        const logDiv = document.getElementById('log');
+<div class="container">
+    <div class="header">
+        <h1>🔥 VulkanLight</h1>
+        <p>Галерея скриншотов — производительность, стабильность, честные цифры</p>
+    </div>
 
-        let pack = null;
+    <div class="counter" id="counter">Загрузка изображений...</div>
 
-        function log(msg, cls='info') {
-            const d = document.createElement('div');
-            d.className = cls;
-            d.textContent = `> ${msg}`;
-            logDiv.appendChild(d);
-            logDiv.scrollTop = logDiv.scrollHeight;
-        }
+    <div class="gallery" id="gallery">
+        <div class="error">📂 Загрузка... Убедитесь, что папка <strong>/images/</strong> существует и содержит изображения.</div>
+    </div>
 
-        zone.addEventListener('click', () => input.click());
-        zone.addEventListener('dragover', e => e.preventDefault());
-        zone.addEventListener('drop', e => {
-            e.preventDefault();
-            const f = e.dataTransfer.files[0];
-            if (f?.name.endsWith('.mrpack')) load(f);
-        });
-        input.addEventListener('change', e => {
-            if (e.target.files[0]) load(e.target.files[0]);
-        });
+    <div class="footer">
+        <a href="https://github.com/ваш-аккаунт/vulkanlight" target="_blank">GitHub репозиторий</a> • 
+        <a href="https://modrinth.com/modpack/vulkanlight" target="_blank">Страница на Modrinth</a>
+    </div>
+</div>
 
-        async function load(f) {
-            info.textContent = `📁 ${f.name} (${(f.size/1024).toFixed(0)}kb)`;
-            btn.disabled = true;
-            log(`Чтение ${f.name}`, 'info');
-            try {
-                const zip = await JSZip.loadAsync(f);
-                const mf = zip.file("modrinth.index.json");
-                if(!mf) throw new Error('modrinth.index.json не найден');
-                const manifest = JSON.parse(await mf.async("string"));
-                pack = { zip, manifest };
-                log(`Найдено модов: ${manifest.files?.length || 0}`, 'ok');
-                btn.disabled = false;
-            } catch(e) {
-                log(`Ошибка: ${e.message}`, 'err');
+<!-- Модальное окно для увеличенного просмотра -->
+<div class="modal" id="modal">
+    <button class="close-btn" id="closeBtn">&times;</button>
+    <img id="modalImage" src="" alt="Увеличенное изображение">
+</div>
+
+<script>
+    // Поддерживаемые форматы
+    const SUPPORTED_FORMATS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp'];
+
+    // Функция для получения всех изображений из папки /images/
+    async function loadGallery() {
+        const galleryDiv = document.getElementById('gallery');
+        const counterSpan = document.getElementById('counter');
+
+        // Пробуем загрузить список файлов через GitHub API (если репозиторий публичный)
+        // Или просто пробуем перебирать имена (костыль, но рабочий для простых случаев)
+        // Второй вариант: используем .json файл с описанием изображений
+        
+        // Для GitHub Pages лучше заранее создать файл images/list.json с перечнем файлов
+        // Но если его нет — будем пробовать стандартные имена
+        
+        const imagesList = [];
+        
+        // Вариант 1: Если есть list.json (рекомендуется)
+        try {
+            const response = await fetch('images/list.json');
+            if (response.ok) {
+                const data = await response.json();
+                imagesList.push(...data);
+            } else {
+                throw new Error('Нет list.json');
             }
-        }
-
-        btn.addEventListener('click', async () => {
-            if(!pack) return;
-            btn.disabled = true;
-            prog.style.display = 'block';
-            prog.value = 0;
-            logDiv.innerHTML = '';
-            log('Старт сборки...', 'ok');
-
-            const out = new JSZip();
-            const files = pack.manifest.files || [];
-            const total = files.length;
-            let ok = 0, fail = 0;
-
-            for(let i=0; i<files.length; i++) {
-                const m = files[i];
-                prog.value = ((i+1)/total)*100;
-                
-                if(m.env?.client === 'unsupported') {
-                    log(`Пропущен (server): ${m.path}`, 'info');
-                    continue;
-                }
-                try {
-                    const url = m.downloads?.[0];
-                    if(!url) throw new Error('Нет ссылки');
-                    log(`Загрузка: ${m.path.split('/').pop()}`, 'info');
-                    const res = await fetch(url);
-                    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-                    out.file(m.path, await res.blob());
-                    ok++;
-                } catch(e) {
-                    log(`Ошибка: ${m.path} - ${e.message}`, 'err');
-                    fail++;
-                }
-            }
-
-            log('Копирование конфигов (overrides)...', 'info');
-            for(let [p, f] of Object.entries(pack.zip.files)) {
-                if(p.startsWith('overrides/') && !f.dir) {
-                    const target = p.replace('overrides/', '');
-                    out.file(target, await f.async('blob'));
-                    log(`  ${target}`, 'ok');
-                }
-            }
-
-            log(`Упаковка ZIP... (успешно: ${ok}, ошибок: ${fail})`, 'ok');
-            const blob = await out.generateAsync({type:'blob'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = pack.manifest.name?.replace(/[^a-z0-9]/gi,'_') || 'pack';
-            a.download += '.zip';
-            a.click();
-            URL.revokeObjectURL(url);
+        } catch (e) {
+            // Вариант 2: Ручное указание изображений (для простоты — несколько популярных имён)
+            // Ты можешь дописать свои имена вручную
+            const knownNames = [
+                'screenshot1', 'screenshot2', 'screenshot3', 'screenshot4', 'screenshot5',
+                'fps_test', 'gpu_load', 'frametime', 'showcase', 'preview'
+            ];
             
-            prog.style.display = 'none';
-            btn.disabled = false;
-            log('Готово!', 'ok');
+            for (const name of knownNames) {
+                for (const ext of SUPPORTED_FORMATS) {
+                    const imgPath = `images/${name}.${ext}`;
+                    try {
+                        const testResponse = await fetch(imgPath, { method: 'HEAD' });
+                        if (testResponse.ok) {
+                            imagesList.push(imgPath);
+                            break;
+                        }
+                    } catch (err) {
+                        // просто продолжаем
+                    }
+                }
+            }
+        }
+        
+        if (imagesList.length === 0) {
+            galleryDiv.innerHTML = `<div class="error">❌ Не найдено ни одного изображения!<br><br>
+            📁 Поместите файлы в папку <strong>/images/</strong><br>
+            📄 Форматы: ${SUPPORTED_FORMATS.join(', ')}<br>
+            🔧 Для удобства создайте файл <strong>images/list.json</strong> с массивом путей к изображениям.</div>`;
+            counterSpan.textContent = 'Изображений не найдено';
+            return;
+        }
+        
+        counterSpan.textContent = `📸 Всего изображений: ${imagesList.length}`;
+        
+        // Отображаем карточки
+        galleryDiv.innerHTML = '';
+        
+        imagesList.forEach(imgPath => {
+            // Определяем имя файла без пути
+            const fileName = imgPath.split('/').pop();
+            const fileSize = '(размер неизвестен)';
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const img = document.createElement('img');
+            img.src = imgPath;
+            img.alt = fileName;
+            img.loading = 'lazy';
+            img.onerror = () => {
+                img.style.opacity = '0.5';
+                img.style.minHeight = '200px';
+                img.alt = 'Не удалось загрузить';
+            };
+            
+            const info = document.createElement('div');
+            info.className = 'card-info';
+            info.innerHTML = `<span>📷 ${fileName}</span><span>🖱️ Клик для увеличения</span>`;
+            
+            card.appendChild(img);
+            card.appendChild(info);
+            
+            // Клик по карточке — открыть увеличенное изображение
+            card.addEventListener('click', () => {
+                const modal = document.getElementById('modal');
+                const modalImg = document.getElementById('modalImage');
+                modalImg.src = imgPath;
+                modal.classList.add('active');
+            });
+            
+            galleryDiv.appendChild(card);
         });
-    </script>
+    }
+    
+    // Закрытие модального окна
+    const modal = document.getElementById('modal');
+    const closeBtn = document.getElementById('closeBtn');
+    
+    closeBtn.addEventListener('click', () => {
+        modal.classList.remove('active');
+    });
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+    
+    // Загрузка галереи при старте
+    loadGallery();
+</script>
 </body>
 </html>
