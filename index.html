@@ -31,27 +31,20 @@
             color: transparent;
         }
 
-        .header p {
-            color: #888;
-            margin-top: 0.5rem;
-        }
-
-        /* Сетка галереи */
         .gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
             max-width: 1400px;
             margin: 0 auto;
         }
 
-        /* Карточка */
         .card {
             background: #1a1a1a;
             border-radius: 16px;
             overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .card:hover {
@@ -64,7 +57,6 @@
             height: 200px;
             object-fit: cover;
             display: block;
-            background: #2a2a2a;
         }
 
         .card .info {
@@ -75,16 +67,9 @@
             font-size: 0.85rem;
             color: #ff884d;
             font-family: monospace;
-            word-break: break-all;
         }
 
-        .card .path {
-            font-size: 0.7rem;
-            color: #666;
-            margin-top: 0.25rem;
-        }
-
-        /* Модальное окно (увеличенное фото) */
+        /* Модальное окно */
         .modal {
             display: none;
             position: fixed;
@@ -107,31 +92,6 @@
             max-width: 90vw;
             max-height: 90vh;
             object-fit: contain;
-            border-radius: 8px;
-        }
-
-        .modal .raw-link {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.7);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            color: #ff884d;
-            text-decoration: none;
-            font-family: monospace;
-        }
-
-        .modal .raw-link:hover {
-            background: #ff6600;
-            color: #000;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #888;
         }
 
         .footer {
@@ -148,144 +108,66 @@
 
 <div class="header">
     <h1>🔥 VulkanLight</h1>
-    <p>Галерея скриншотов | Кликни по картинке для увеличения</p>
+    <p>Галерея скриншотов | Кликни для увеличения</p>
 </div>
 
-<div class="gallery" id="gallery">
-    <div class="loading">Загрузка изображений...</div>
-</div>
+<div class="gallery" id="gallery"></div>
 
 <div class="footer">
     VulkanLight — легковесная сборка на VulkanMod
 </div>
 
-<!-- Модальное окно -->
 <div class="modal" id="modal">
     <img id="modalImage" alt="Preview">
-    <a href="#" id="rawLink" class="raw-link" target="_blank">📷 Открыть RAW</a>
 </div>
 
 <script>
-    // 📁 Настройки — измени под свою структуру
-    const GITHUB_USER = "YOUR_USERNAME";      // твой GitHub ник
-    const GITHUB_REPO = "YOUR_REPO";          // название репозитория
-    const BRANCH = "main";                    // ветка (main или master)
-    
-    // Корневые папки с картинками (можно добавить несколько)
-    const IMAGE_ROOTS = [
-        "images",           // основная папка
-        "images/screenshots",
-        "images/comparison"
+    // 📸 Список твоих фото — ДОБАВЛЯЙ СЮДА!
+    // Формат: "папка/имя_файла.png" или просто "имя_файла.png"
+    const images = [
+        // Примеры (замени на свои):
+        "images/скрин1.png",
+        "images/скрин2.jpg",
+        "images/сравнение/sodium.png",
+        "images/сравнение/vulkan.png"
     ];
-    
-    // Поддерживаемые расширения
-    const SUPPORTED_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
-    
-    // 🔧 Автоматически определяем режим (GitHub Pages или локальный)
-    const isGitHub = window.location.hostname.includes('github.io');
-    
-    function buildRawUrl(path) {
-        if (isGitHub) {
-            return `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${BRANCH}/${path}`;
-        } else {
-            return path; // локально — просто путь
-        }
+
+    // Функция получения имени файла из пути
+    function getFileName(path) {
+        return path.split('/').pop();
     }
-    
-    async function loadImagesFromFolder(folderPath) {
-        const images = [];
-        
-        if (isGitHub) {
-            // GitHub API: получаем содержимое папки
-            const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${folderPath}?ref=${BRANCH}`;
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) return images;
-                const files = await response.json();
-                
-                for (const file of files) {
-                    if (file.type === 'file') {
-                        const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
-                        if (SUPPORTED_EXT.includes(ext)) {
-                            images.push({
-                                name: file.name,
-                                path: file.path,
-                                url: file.download_url,
-                                rawUrl: file.download_url
-                            });
-                        }
-                    } else if (file.type === 'dir') {
-                        // Рекурсивно заходим в подпапки
-                        const subImages = await loadImagesFromFolder(file.path);
-                        images.push(...subImages);
-                    }
-                }
-            } catch (e) {
-                console.warn(`Не удалось загрузить ${folderPath}:`, e);
-            }
-        } else {
-            // Локальный режим: не можем автоматически сканировать, используем фиксированный список
-            // Просто показываем заглушку
-            console.log("Локальный режим: добавь пути вручную или используй GitHub Pages");
-        }
-        
-        return images;
-    }
-    
-    async function loadAllImages() {
-        let allImages = [];
-        
-        for (const root of IMAGE_ROOTS) {
-            const images = await loadImagesFromFolder(root);
-            allImages.push(...images);
-        }
-        
-        // Убираем дубликаты по path
-        const unique = new Map();
-        for (const img of allImages) {
-            if (!unique.has(img.path)) {
-                unique.set(img.path, img);
-            }
-        }
-        
-        return Array.from(unique.values());
-    }
-    
-    function renderGallery(images) {
+
+    // Рендер галереи
+    function renderGallery() {
         const gallery = document.getElementById('gallery');
         
         if (images.length === 0) {
-            gallery.innerHTML = '<div class="loading">📭 Изображений не найдено. Проверь папку images/</div>';
+            gallery.innerHTML = '<div style="text-align:center;padding:3rem;">📭 Нет фото. Добавь пути в массив images</div>';
             return;
         }
         
-        gallery.innerHTML = images.map(img => `
-            <div class="card" data-url="${img.url}" data-raw="${img.rawUrl}">
-                <img src="${img.url}" loading="lazy" alt="${img.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Crect width=%22100%25%22 height=%22100%25%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E🖼️%3C/text%3E%3C/svg%3E'">
+        gallery.innerHTML = images.map(imgPath => `
+            <div class="card" data-url="${imgPath}">
+                <img src="${imgPath}" loading="lazy" alt="${getFileName(imgPath)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E❌%3C/text%3E%3C/svg%3E'">
                 <div class="info">
-                    <div class="filename">📷 ${img.name}</div>
-                    <div class="path">📁 ${img.path}</div>
+                    <div class="filename">📷 ${getFileName(imgPath)}</div>
                 </div>
             </div>
         `).join('');
         
-        // Вешаем обработчики на карточки
+        // Вешаем обработчики
         document.querySelectorAll('.card').forEach(card => {
             card.addEventListener('click', () => {
                 const url = card.dataset.url;
-                const raw = card.dataset.raw;
-                openModal(url, raw);
+                openModal(url);
             });
         });
     }
     
-    function openModal(imageUrl, rawUrl) {
+    function openModal(imageUrl) {
         const modal = document.getElementById('modal');
         const modalImage = document.getElementById('modalImage');
-        const rawLink = document.getElementById('rawLink');
-        
         modalImage.src = imageUrl;
-        rawLink.href = rawUrl;
         modal.classList.add('active');
     }
     
@@ -295,10 +177,7 @@
     }
     
     // Запуск
-    (async () => {
-        const images = await loadAllImages();
-        renderGallery(images);
-    })();
+    renderGallery();
     
     // Закрытие модального окна
     document.getElementById('modal').addEventListener('click', closeModal);
