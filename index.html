@@ -178,7 +178,7 @@
             <div class="card" data-url="${imgUrl}">
                 <img src="${imgUrl}" loading="lazy" alt="${getFileName(imgUrl)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E❌%3C/text%3E%3C/svg%3E'">
                 <div class="info">
-                    <div class="filename">📷 ${getFileName(imgUrl)}</div>
+                    <div class="filename">📷 ${decodeFilename(imgUrl)}</div>
                 </div>
             </div>
         `).join('');
@@ -204,6 +204,12 @@
         const modal = document.getElementById('modal');
         modal.classList.remove('active');
     }
+
+    function decodeFilename(url) {
+    // Декодируем URL (например, %D0%9D → Н)
+    const decoded = decodeURIComponent(url.split('/').pop());
+    return decoded;
+}
     
     // Запуск
     renderGallery();
