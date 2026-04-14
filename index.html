@@ -3,220 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VulkanLight — Галерея</title>
+    <title>Зашифрованная галерея</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: #0a0a0a;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            padding: 2rem;
-            color: #e0e0e0;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #ff6600, #ff2200);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .header p {
-            color: #888;
-            margin-top: 0.5rem;
-        }
-
-        .modrinth-link {
-            display: inline-block;
-            margin-top: 1rem;
-            padding: 0.5rem 1rem;
-            background: #1a6e3b;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .modrinth-link:hover {
-            background: #0f522b;
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-            max-width: 1400px;
-            margin: 2rem auto;
-        }
-
-        .card {
-            background: #1a1a1a;
-            border-radius: 16px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-        }
-
-        .card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            display: block;
-            background: #2a2a2a;
-        }
-
-        .card .info {
-            padding: 0.75rem 1rem;
-        }
-
-        .card .filename {
-            font-size: 0.8rem;
-            color: #ff884d;
-            font-family: monospace;
-            word-break: break-all;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal img {
-            max-width: 90vw;
-            max-height: 90vh;
-            object-fit: contain;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid #2a2a2a;
-            color: #555;
-            font-size: 0.8rem;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #888;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #eee; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; }
+        .controls { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        select, button { padding: 10px 20px; background: #1e1e1e; color: white; border: 1px solid #333; border-radius: 8px; cursor: pointer; }
+        button:hover { background: #333; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: #111; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; border: 1px solid #222; }
+        .card:hover { transform: scale(1.02); }
+        .card-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #1a1a1a; }
+        .card-info { padding: 12px; }
+        .card-title { font-weight: bold; margin-bottom: 5px; }
+        .card-meta { font-size: 12px; color: #888; }
+        .unlisted-badge { background: #ff4444; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-left: 8px; }
+        .password-prompt { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .password-box { background: #1e1e1e; padding: 30px; border-radius: 16px; text-align: center; }
+        .password-box input { padding: 10px; margin: 10px; border-radius: 8px; border: none; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-
-<div class="header">
-    <h1>🔥 VulkanLight</h1>
-    <p>Галерея скриншотов | Кликни для увеличения</p>
-    <a href="https://modrinth.com/modpack/vulkanlight" class="modrinth-link" target="_blank">📥 Скачать на Modrinth</a>
+<div class="container">
+    <h1>📸 Зашифрованная галерея</h1>
+    <div class="controls">
+        <select id="categoryFilter">
+            <option value="all">Все категории</option>
+        </select>
+        <button id="decryptAllBtn">🔓 Расшифровать всё (ввести пароль)</button>
+    </div>
+    <div id="gallery" class="gallery"></div>
 </div>
-
-<div class="gallery" id="gallery">
-    <div class="loading">Загрузка изображений...</div>
-</div>
-
-<div class="footer">
-    VulkanLight — легковесная сборка на VulkanMod
-</div>
-
-<div class="modal" id="modal">
-    <img id="modalImage" alt="Preview">
-</div>
-
-<script>
-    // 📸 Список твоих фото — ДОБАВЛЯЙ СЮДА ССЫЛКИ НА RAW-ФАЙЛЫ
-    // Получить RAW-ссылку: открой файл в репозитории → нажми "Raw" → скопируй URL
-    const images = [
-        // Пример: "https://raw.githubusercontent.com/kolocuz/ваш-репозиторий/main/images/фото.png",
-        "https://kolocuz.github.io/images/document_0.png.png",
-        "https://kolocuz.github.io/images/%D0%9D%D0%BE%D1%80%D0%BC_%D1%80%D0%B8%D1%81%D0%BE%D0%B2%D0%B0%D0%BB%D0%BA%D0%B0_%D0%B2%D0%BE%D0%BF%D1%80%D0%BE%D1%81.png"
-    ];
-
-    // Функция получения имени файла из URL
-    function getFileName(url) {
-        return url.split('/').pop();
-    }
-
-    // Рендер галереи
-    function renderGallery() {
-        const gallery = document.getElementById('gallery');
-        
-        if (images.length === 0) {
-            gallery.innerHTML = '<div class="loading">📭 Нет фото. Добавь ссылки в массив images</div>';
-            return;
-        }
-        
-        gallery.innerHTML = images.map(imgUrl => `
-            <div class="card" data-url="${imgUrl}">
-                <img src="${imgUrl}" loading="lazy" alt="${getFileName(imgUrl)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E❌%3C/text%3E%3C/svg%3E'">
-                <div class="info">
-                    <div class="filename">📷 ${decodeFilename(imgUrl)}</div>
-                </div>
-            </div>
-        `).join('');
-        
-        // Обработчики кликов
-        document.querySelectorAll('.card').forEach(card => {
-            card.addEventListener('click', () => {
-                const url = card.dataset.url;
-                document.getElementById('modalImage').src = url;
-                document.getElementById('modal').classList.add('active');
-            });
-        });
-    }
-    
-    function openModal(imageUrl) {
-        const modal = document.getElementById('modal');
-        const modalImage = document.getElementById('modalImage');
-        modalImage.src = imageUrl;
-        modal.classList.add('active');
-    }
-    
-    function closeModal() {
-        const modal = document.getElementById('modal');
-        modal.classList.remove('active');
-    }
-
-    function decodeFilename(url) {
-    // Декодируем URL (например, %D0%9D → Н)
-    const decoded = decodeURIComponent(url.split('/').pop());
-    return decoded;
-}
-    
-    // Запуск
-    renderGallery();
-    
-    // Закрытие модального окна
-    document.getElementById('modal').addEventListener('click', closeModal);
-    document.getElementById('modalImage').addEventListener('click', (e) => e.stopPropagation());
-</script>
+<script src="crypto-helper.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
