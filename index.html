@@ -10,16 +10,19 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             background: #0a0a0a;
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             padding: 2rem;
             color: #e0e0e0;
         }
+
         .header {
             text-align: center;
             margin-bottom: 3rem;
         }
+
         .header h1 {
             font-size: 2.5rem;
             background: linear-gradient(135deg, #ff6600, #ff2200);
@@ -27,17 +30,35 @@
             background-clip: text;
             color: transparent;
         }
+
         .header p {
             color: #888;
             margin-top: 0.5rem;
         }
+
+        .modrinth-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: #1a6e3b;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .modrinth-link:hover {
+            background: #0f522b;
+        }
+
         .gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
             max-width: 1400px;
-            margin: 0 auto;
+            margin: 2rem auto;
         }
+
         .card {
             background: #1a1a1a;
             border-radius: 16px;
@@ -45,26 +66,31 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
+
         .card:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
+
         .card img {
             width: 100%;
-            height: 180px;
+            height: 200px;
             object-fit: cover;
             display: block;
             background: #2a2a2a;
         }
+
         .card .info {
             padding: 0.75rem 1rem;
         }
+
         .card .filename {
             font-size: 0.8rem;
             color: #ff884d;
             font-family: monospace;
             word-break: break-all;
         }
+
         .modal {
             display: none;
             position: fixed;
@@ -78,14 +104,17 @@
             align-items: center;
             cursor: pointer;
         }
+
         .modal.active {
             display: flex;
         }
+
         .modal img {
             max-width: 90vw;
             max-height: 90vh;
             object-fit: contain;
         }
+
         .footer {
             text-align: center;
             margin-top: 3rem;
@@ -94,15 +123,11 @@
             color: #555;
             font-size: 0.8rem;
         }
+
         .loading {
             text-align: center;
             padding: 3rem;
             color: #888;
-        }
-        .error {
-            text-align: center;
-            padding: 3rem;
-            color: #ff6666;
         }
     </style>
 </head>
@@ -110,11 +135,12 @@
 
 <div class="header">
     <h1>🔥 VulkanLight</h1>
-    <p>Галерея скриншотов | Обновляется из images.json</p>
+    <p>Галерея скриншотов | Кликни для увеличения</p>
+    <a href="https://modrinth.com/modpack/vulkanlight" class="modrinth-link" target="_blank">📥 Скачать на Modrinth</a>
 </div>
 
 <div class="gallery" id="gallery">
-    <div class="loading">📡 Загрузка списка изображений...</div>
+    <div class="loading">Загрузка изображений...</div>
 </div>
 
 <div class="footer">
@@ -126,63 +152,64 @@
 </div>
 
 <script>
-    async function loadGallery() {
+    // 📸 Список твоих фото — ДОБАВЛЯЙ СЮДА ССЫЛКИ НА RAW-ФАЙЛЫ
+    // Получить RAW-ссылку: открой файл в репозитории → нажми "Raw" → скопируй URL
+    const images = [
+        // Пример: "https://raw.githubusercontent.com/kolocuz/ваш-репозиторий/main/images/фото.png",
+        "https://raw.githubusercontent.com/kolocuz/kolocuz.github.io/main/images/document_0.png.png"
+    ];
+
+    // Функция получения имени файла из URL
+    function getFileName(url) {
+        return url.split('/').pop();
+    }
+
+    // Рендер галереи
+    function renderGallery() {
         const gallery = document.getElementById('gallery');
         
-        try {
-            // Читаем images.json
-            const response = await fetch('images.json');
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const images = await response.json();
-            
-            if (!Array.isArray(images) || images.length === 0) {
-                gallery.innerHTML = '<div class="error">📭 В images.json нет путей к фото. Добавь строки типа "images/фото.png"</div>';
-                return;
-            }
-            
-            // Рендерим галерею
-            gallery.innerHTML = images.map(path => {
-                const filename = path.split('/').pop();
-                return `
-                    <div class="card" data-url="${path}">
-                        <img src="${path}" loading="lazy" alt="${filename}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E❌%3C/text%3E%3C/svg%3E'">
-                        <div class="info">
-                            <div class="filename">📷 ${filename}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            // Обработчики кликов
-            document.querySelectorAll('.card').forEach(card => {
-                card.addEventListener('click', () => {
-                    const url = card.dataset.url;
-                    document.getElementById('modalImage').src = url;
-                    document.getElementById('modal').classList.add('active');
-                });
-            });
-            
-        } catch (err) {
-            console.error(err);
-            gallery.innerHTML = `<div class="error">❌ Ошибка загрузки images.json: ${err.message}<br><br>📌 Убедись, что файл существует и содержит массив путей: ["images/фото1.png", "images/фото2.jpg"]</div>`;
+        if (images.length === 0) {
+            gallery.innerHTML = '<div class="loading">📭 Нет фото. Добавь ссылки в массив images</div>';
+            return;
         }
+        
+        gallery.innerHTML = images.map(imgUrl => `
+            <div class="card" data-url="${imgUrl}">
+                <img src="${imgUrl}" loading="lazy" alt="${getFileName(imgUrl)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22%3E❌%3C/text%3E%3C/svg%3E'">
+                <div class="info">
+                    <div class="filename">📷 ${getFileName(imgUrl)}</div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Обработчики кликов
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', () => {
+                const url = card.dataset.url;
+                document.getElementById('modalImage').src = url;
+                document.getElementById('modal').classList.add('active');
+            });
+        });
     }
     
-    // Закрытие модального окна
-    document.getElementById('modal').addEventListener('click', () => {
-        document.getElementById('modal').classList.remove('active');
-    });
+    function openModal(imageUrl) {
+        const modal = document.getElementById('modal');
+        const modalImage = document.getElementById('modalImage');
+        modalImage.src = imageUrl;
+        modal.classList.add('active');
+    }
     
-    document.getElementById('modalImage').addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
+    function closeModal() {
+        const modal = document.getElementById('modal');
+        modal.classList.remove('active');
+    }
     
     // Запуск
-    loadGallery();
+    renderGallery();
+    
+    // Закрытие модального окна
+    document.getElementById('modal').addEventListener('click', closeModal);
+    document.getElementById('modalImage').addEventListener('click', (e) => e.stopPropagation());
 </script>
 </body>
 </html>
