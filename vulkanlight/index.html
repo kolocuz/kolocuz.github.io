@@ -103,25 +103,40 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
 
-        .download-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5rem 0;
+        .download-section {
+            margin: 2rem 0;
         }
-        .download-table th, .download-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #2a2a2a;
+        .download-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
         }
-        .download-table th {
-            color: #ff884d;
-        }
-        .download-table a {
-            color: #ff884d;
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            border-radius: 40px;
             text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
         }
-        .download-table a:hover {
-            text-decoration: underline;
+        .btn-mrpack {
+            background: #ff6600;
+            color: white;
+            border: none;
+        }
+        .btn-mrpack:hover {
+            background: #ff5500;
+            transform: scale(1.02);
+        }
+        .btn-zip {
+            background: #2a2a2a;
+            color: #ff884d;
+            border: 1px solid #ff6600;
+        }
+        .btn-zip:hover {
+            background: #3a3a3a;
+            transform: scale(1.02);
         }
 
         .back-link {
@@ -154,6 +169,9 @@
             .content {
                 padding: 1.2rem;
             }
+            .btn {
+                padding: 0.6rem 1.2rem;
+            }
         }
     </style>
 </head>
@@ -182,11 +200,13 @@
             <img src="prew.png" alt="VulkanLight screenshot">
         </div>
 
-        <h2 data-translate="downloads">📦 Downloads</h2>
-        <table class="download-table">
-            <tr><th data-translate="version">Version</th><th>.mrpack</th><th>.zip (Prism)</th></tr>
-            <tr><td>v1.0.0</td><td><a href="downloads/VulkanLight-1.0.0.mrpack">Download</a></td><td><a href="downloads/VulkanLight-1.0.0-Prism.zip">Download</a></td></tr>
-        </table>
+        <div class="download-section">
+            <h2 data-translate="downloads">📦 Downloads</h2>
+            <div class="download-buttons">
+                <a href="https://github.com/kolocuz/kolocuz.github.io/releases/download/files/VulkanLight-1.0.0.zip" class="btn btn-zip" data-translate="prism-zip">📥 Prism .zip</a>
+            </div>
+            <p style="margin-top: 0.8rem; font-size: 0.8rem; color: #666;" data-translate="note">Modrinth version: <a href="https://modrinth.com/modpack/vulkanlight" style="color:#ff884d;">VulkanLight on Modrinth</a></p>
+        </div>
     </div>
 
     <a href="../index.html" class="back-link" data-translate="back">← Back to Hub</a>
@@ -205,7 +225,8 @@
             feature3: "Best for older PCs and weak GPUs",
             feature4: "No Sodium, no Iris, no bloat",
             downloads: "📦 Downloads",
-            version: "Version",
+            "prism-zip": "📥 Prism .zip",
+            note: "Modrinth version:",
             back: "← Back to Hub"
         },
         ru: {
@@ -216,7 +237,8 @@
             feature3: "Лучший выбор для старых ПК и слабых видеокарт",
             feature4: "Без Sodium, Iris и мусора",
             downloads: "📦 Загрузки",
-            version: "Версия",
+            "prism-zip": "📥 Prism .zip",
+            note: "Версия на Modrinth:",
             back: "← Назад на главную"
         }
     };
