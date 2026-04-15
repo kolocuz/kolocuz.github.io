@@ -100,32 +100,32 @@
     <div class="footer"><p>VulkanLight — just Vulkan. Just performance.</p></div>
 </div>
 <script>
-    const translations = {
-        en: {
-            desc: "Lightweight Fabric modpack built around VulkanMod",
-            features: "⚡ Key Features",
-            feature1: "VulkanMod + Not Enough Vulkan — modern rendering",
-            feature2: "32 chunks render distance without major FPS drops",
-            feature3: "Maximum performance and high FPS even on old PCs",
-            feature4: "No Sodium, no Iris, no bloat, have shader(Beryl)!",
-            "download-mrpack": "📦 .mrpack(beryl to choose from)",
-            "download-zip": "📦 .zip (Prism)(Beryl is included by default)",
-            "modrinth-link": "Also available on Modrinth",
-            back: "← Back to Hub"
-        },
-        ru: {
-            desc: "Лёгкая сборка на Fabric на базе VulkanMod",
-            features: "⚡ Ключевые особенности",
-            feature1: "VulkanMod + Not Enough Vulkan — современный рендеринг",
-            feature2: "32 чанка прорисовки без сильных просадок FPS",
-            feature3: "Максимальная производительность и высокий FPS даже на старых ПК",
-            feature4: "Без Sodium, Iris и мусора, но есть шейдер(Beryl)!",
-            "download-mrpack": "📦 .mrpack(Beryl на выбор)",
-            "download-zip": "📦 .zip (Prism)(beryl вкл. по умолч.)",
-            "modrinth-link": "Также доступно на Modrinth",
-            back: "← Назад на главную"
-        }
-    };
+const translations = {
+    en: {
+        desc: "Lightweight Fabric modpack built around VulkanMod",
+        features: "⚡ Key Features",
+        feature1: "VulkanMod + Not Enough Vulkan — modern rendering",
+        feature2: "32 chunks render distance without major FPS drops",
+        feature3: "Maximum performance and high FPS even on old PCs",
+        feature4: "No Sodium, no Iris, no bloat — but has shader support (Beryl)!",
+        "download-mrpack": "📦 .mrpack (Beryl optional)",
+        "download-zip": "📦 .zip (Prism) — Beryl included by default",
+        "modrinth-link": "Also available on Modrinth",
+        back: "← Back to Hub"
+    },
+    ru: {
+        desc: "Лёгкая сборка на Fabric на базе VulkanMod",
+        features: "⚡ Ключевые особенности",
+        feature1: "VulkanMod + Not Enough Vulkan — современный рендеринг",
+        feature2: "32 чанка прорисовки без сильных просадок FPS",
+        feature3: "Максимальная производительность и высокий FPS даже на старых ПК",
+        feature4: "Без Sodium, Iris и мусора — но есть шейдер (Beryl)!",
+        "download-mrpack": "📦 .mrpack (Beryl на выбор)",
+        "download-zip": "📦 .zip (Prism) — Beryl вкл. по умолчанию",
+        "modrinth-link": "Также доступно на Modrinth",
+        back: "← Назад на главную"
+    }
+};
     function getBrowserLanguage() { return navigator.language.startsWith('ru') ? 'ru' : 'en'; }
     function setLanguage(lang) { localStorage.setItem('vulkanlight-lang', lang); applyLanguage(lang); }
     function applyLanguage(lang) {
