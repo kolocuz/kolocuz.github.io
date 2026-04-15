@@ -10,61 +10,112 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            background: #0a0a0a;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #121212 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* Контейнер */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 2rem;
         }
+
+        /* Переключатель языков */
+        .lang-switch {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .lang-switch button {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #ccc;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .lang-switch button:hover {
+            background: #3a3a3a;
+            color: white;
+            border-color: #ff6600;
+        }
+
+        /* Заголовок */
         .header {
             text-align: center;
             margin-bottom: 3rem;
         }
         .header h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #ff6600, #00ff66);
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff884d, #00ff88);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            margin-bottom: 0.5rem;
         }
-        .lang-switch {
-            text-align: right;
-            margin-bottom: 1rem;
+        .header p {
+            color: #888;
+            font-size: 1.1rem;
         }
-        .lang-switch button {
-            background: #2a2a2a;
-            border: none;
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.75rem;
-        }
+
+        /* Сетка карточек */
         .grid {
-            display: flex;
-            justify-content: center;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 2rem;
-            flex-wrap: wrap;
-            max-width: 1200px;
-            margin: 0 auto;
+            margin-bottom: 3rem;
         }
+
+        /* Карточка проекта */
         .card {
-            background: #1a1a1a;
-            border-radius: 24px;
-            width: 320px;
-            padding: 1.5rem;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            padding: 1.8rem;
             text-align: center;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
         .card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-6px);
+            border-color: #ff6600;
+            box-shadow: 0 16px 30px rgba(0,0,0,0.4);
         }
-        .card img {
+
+        /* Иконка */
+        .card-icon {
             width: 100px;
             height: 100px;
-            border-radius: 20px;
-            margin-bottom: 1rem;
+            margin: 0 auto 1.2rem;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            border: 1px solid #3a3a3a;
         }
+        .vulkan-icon {
+            background: linear-gradient(135deg, #ff4400, #ff8800);
+            color: white;
+        }
+        .sodium-icon {
+            background: linear-gradient(135deg, #00aa44, #00ff88);
+            color: white;
+        }
+
         .card h2 {
             font-size: 1.8rem;
             margin-bottom: 0.5rem;
@@ -72,125 +123,178 @@
         .badge {
             display: inline-block;
             background: #2a2a2a;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
             font-size: 0.75rem;
+            font-weight: 500;
             margin-bottom: 1rem;
+            color: #ffaa66;
+        }
+        .card p {
+            color: #aaa;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Кнопки */
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
         }
         .btn {
             display: inline-block;
-            background: #333;
-            color: white;
+            background: #2a2a2a;
+            color: #ddd;
             padding: 0.5rem 1rem;
-            border-radius: 8px;
+            border-radius: 30px;
             text-decoration: none;
-            margin: 0.25rem;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid #3a3a3a;
+        }
+        .btn:hover {
+            background: #3a3a3a;
+            color: white;
         }
         .btn-primary {
             background: #ff6600;
+            border-color: #ff6600;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #ff5500;
         }
         .btn-green {
             background: #00aa44;
+            border-color: #00aa44;
+            color: white;
         }
+        .btn-green:hover {
+            background: #008833;
+        }
+
+        /* Подвал */
         .footer {
             text-align: center;
-            margin-top: 3rem;
-            color: #555;
+            padding-top: 2rem;
+            border-top: 1px solid #2a2a2a;
+            color: #666;
             font-size: 0.8rem;
         }
-        [data-translate] {
-            transition: opacity 0.1s;
+        .footer a {
+            color: #ff884d;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
+<div class="container">
     <div class="lang-switch">
         <button onclick="setLanguage('en')">English</button>
         <button onclick="setLanguage('ru')">Русский</button>
     </div>
+
     <div class="header">
         <h1>⚡ Light Series</h1>
         <p data-translate="tagline">Lightweight Fabric modpacks for maximum performance</p>
     </div>
+
     <div class="grid">
-        <!-- VulkanLight Card -->
+        <!-- VulkanLight -->
         <div class="card">
-            <img src="assets/images/vulkan-icon.png" alt="VulkanLight">
+            <div class="card-icon vulkan-icon">V</div>
             <h2>🔥 VulkanLight</h2>
             <div class="badge" data-translate="vulkan-badge">Vulkan · 32 chunks · 500+ FPS</div>
             <p data-translate="vulkan-desc">Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.</p>
-            <a href="vulkanlight/" class="btn" data-translate="learn-more">Learn More</a>
-            <a href="vulkanlight/downloads/VulkanLight-1.0.0.mrpack" class="btn btn-primary">.mrpack</a>
-            <a href="vulkanlight/downloads/VulkanLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
+            <div class="btn-group">
+                <a href="vulkanlight/" class="btn" data-translate="learn-more">Learn More</a>
+                <a href="#" class="btn btn-primary">.mrpack</a>
+                <a href="#" class="btn">Prism .zip</a>
+            </div>
         </div>
-        <!-- SodiumLight Card -->
+
+        <!-- SodiumLight -->
         <div class="card">
-            <img src="assets/images/sodium-icon.png" alt="SodiumLight">
+            <div class="card-icon sodium-icon">S</div>
             <h2>🧪 SodiumLight</h2>
             <div class="badge" data-translate="sodium-badge">OpenGL · Shaders · 350+ FPS</div>
             <p data-translate="sodium-desc">Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.</p>
-            <a href="sodiumlight/" class="btn" data-translate="learn-more">Learn More</a>
-            <a href="sodiumlight/downloads/SodiumLight-1.0.0.mrpack" class="btn btn-green">.mrpack</a>
-            <a href="sodiumlight/downloads/SodiumLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
+            <div class="btn-group">
+                <a href="sodiumlight/" class="btn" data-translate="learn-more">Learn More</a>
+                <a href="#" class="btn btn-green">.mrpack</a>
+                <a href="#" class="btn">Prism .zip</a>
+            </div>
         </div>
     </div>
+
     <div class="footer">
-        <p data-translate="footer">📥 All downloads are direct links from GitHub. Modrinth pages: <a href="https://modrinth.com/modpack/vulkanlight">VulkanLight</a> · <a href="https://modrinth.com/project/sodiumlight">SodiumLight</a></p>
+        <p data-translate="footer">📥 Direct downloads from GitHub. Modrinth: <a href="#">VulkanLight</a> · <a href="#">SodiumLight</a></p>
     </div>
+</div>
 
-    <script>
-        const translations = {
-            en: {
-                tagline: "Lightweight Fabric modpacks for maximum performance",
-                "vulkan-badge": "Vulkan · 32 chunks · 500+ FPS",
-                "vulkan-desc": "Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.",
-                "sodium-badge": "OpenGL · Shaders · 350+ FPS",
-                "sodium-desc": "Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.",
-                "learn-more": "Learn More",
-                footer: "📥 All downloads are direct links from GitHub. Modrinth pages: VulkanLight · SodiumLight"
-            },
-            ru: {
-                tagline: "Лёгкие сборки на Fabric для максимальной производительности",
-                "vulkan-badge": "Vulkan · 32 чанка · 500+ FPS",
-                "vulkan-desc": "Сборка на VulkanMod. Лучший выбор для старых ПК и слабых видеокарт. Без Sodium и мусора.",
-                "sodium-badge": "OpenGL · Шейдеры · 350+ FPS",
-                "sodium-desc": "Сборка на Sodium + Iris. Полная поддержка шейдеров, максимальная совместимость, стабильный FPS.",
-                "learn-more": "Подробнее",
-                footer: "📥 Все загрузки — прямые ссылки с GitHub. Страницы на Modrinth: VulkanLight · SodiumLight"
+<script>
+    const translations = {
+        en: {
+            tagline: "Lightweight Fabric modpacks for maximum performance",
+            "vulkan-badge": "Vulkan · 32 chunks · 500+ FPS",
+            "vulkan-desc": "Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.",
+            "sodium-badge": "OpenGL · Shaders · 350+ FPS",
+            "sodium-desc": "Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.",
+            "learn-more": "Learn More",
+            footer: "📥 Direct downloads from GitHub. Modrinth: VulkanLight · SodiumLight"
+        },
+        ru: {
+            tagline: "Лёгкие сборки на Fabric для максимальной производительности",
+            "vulkan-badge": "Vulkan · 32 чанка · 500+ FPS",
+            "vulkan-desc": "Сборка на VulkanMod. Лучший выбор для старых ПК и слабых видеокарт. Без Sodium и мусора.",
+            "sodium-badge": "OpenGL · Шейдеры · 350+ FPS",
+            "sodium-desc": "Сборка на Sodium + Iris. Полная поддержка шейдеров, максимальная совместимость, стабильный FPS.",
+            "learn-more": "Подробнее",
+            footer: "📥 Прямые загрузки с GitHub. Modrinth: VulkanLight · SodiumLight"
+        }
+    };
+
+    function getBrowserLanguage() {
+        return navigator.language.startsWith('ru') ? 'ru' : 'en';
+    }
+
+    function setLanguage(lang) {
+        localStorage.setItem('lightseries-lang', lang);
+        applyLanguage(lang);
+    }
+
+    function applyLanguage(lang) {
+        document.querySelectorAll('[data-translate]').forEach(el => {
+            const key = el.getAttribute('data-translate');
+            if (translations[lang] && translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
             }
-        };
+        });
+    }
 
-        function getBrowserLanguage() {
-            const lang = navigator.language || navigator.userLanguage;
-            return lang.startsWith('ru') ? 'ru' : 'en';
-        }
-
-        function setLanguage(lang) {
-            localStorage.setItem('vulkanlight-lang', lang);
-            applyLanguage(lang);
-        }
-
-        function applyLanguage(lang) {
-            const elements = document.querySelectorAll('[data-translate]');
-            elements.forEach(el => {
-                const key = el.getAttribute('data-translate');
-                if (translations[lang] && translations[lang][key]) {
-                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                        el.placeholder = translations[lang][key];
-                    } else {
-                        el.innerHTML = translations[lang][key];
-                    }
-                }
-            });
-        }
-
-        // Определяем язык: сохранённый в localStorage, или язык браузера, или английский
-        let currentLang = localStorage.getItem('vulkanlight-lang');
-        if (!currentLang) {
-            currentLang = getBrowserLanguage();
-        }
-        applyLanguage(currentLang);
-    </script>
+    let currentLang = localStorage.getItem('lightseries-lang');
+    if (!currentLang) currentLang = getBrowserLanguage();
+    applyLanguage(currentLang);
+</script>
 </body>
 </html>
