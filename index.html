@@ -18,14 +18,12 @@
             min-height: 100vh;
         }
 
-        /* Контейнер */
         .container {
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 2rem;
         }
 
-        /* Переключатель языков */
         .lang-switch {
             display: flex;
             justify-content: flex-end;
@@ -40,16 +38,13 @@
             border-radius: 30px;
             cursor: pointer;
             font-size: 0.8rem;
-            font-weight: 500;
             transition: all 0.2s;
         }
         .lang-switch button:hover {
             background: #3a3a3a;
             color: white;
-            border-color: #ff6600;
         }
 
-        /* Заголовок */
         .header {
             text-align: center;
             margin-bottom: 3rem;
@@ -65,94 +60,63 @@
         }
         .header p {
             color: #888;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
-        /* Сетка карточек */
         .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            display: flex;
+            justify-content: center;
             gap: 2rem;
+            flex-wrap: wrap;
             margin-bottom: 3rem;
         }
 
-        /* Карточка проекта */
         .card {
             background: rgba(20, 20, 20, 0.8);
             backdrop-filter: blur(4px);
             border-radius: 28px;
+            width: 300px;
             padding: 1.8rem;
             text-align: center;
             transition: all 0.3s ease;
             border: 1px solid #2a2a2a;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
         .card:hover {
-            transform: translateY(-6px);
+            transform: translateY(-4px);
             border-color: #ff6600;
-            box-shadow: 0 16px 30px rgba(0,0,0,0.4);
         }
 
-        /* Иконка */
         .card-icon {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 1.2rem;
-            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            font-weight: bold;
-            border: 1px solid #3a3a3a;
-        }
-        .vulkan-icon {
-            background: linear-gradient(135deg, #ff4400, #ff8800);
-            color: white;
-        }
-        .sodium-icon {
-            background: linear-gradient(135deg, #00aa44, #00ff88);
-            color: white;
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
         }
 
         .card h2 {
             font-size: 1.8rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
         }
-        .badge {
-            display: inline-block;
-            background: #2a2a2a;
-            padding: 0.3rem 1rem;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin-bottom: 1rem;
-            color: #ffaa66;
-        }
+
         .card p {
             color: #aaa;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             line-height: 1.5;
             margin-bottom: 1.5rem;
         }
 
-        /* Кнопки */
         .btn-group {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 0.5rem;
-            margin-top: 0.5rem;
         }
         .btn {
             display: inline-block;
             background: #2a2a2a;
             color: #ddd;
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 1rem;
             border-radius: 30px;
             text-decoration: none;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 500;
             transition: all 0.2s;
             border: 1px solid #3a3a3a;
@@ -178,31 +142,20 @@
             background: #008833;
         }
 
-        /* Подвал */
         .footer {
             text-align: center;
             padding-top: 2rem;
             border-top: 1px solid #2a2a2a;
             color: #666;
-            font-size: 0.8rem;
-        }
-        .footer a {
-            color: #ff884d;
-            text-decoration: none;
-        }
-        .footer a:hover {
-            text-decoration: underline;
+            font-size: 0.75rem;
         }
 
         @media (max-width: 700px) {
             .container {
-                padding: 1.5rem;
+                padding: 1rem;
             }
             .header h1 {
-                font-size: 2.2rem;
-            }
-            .grid {
-                grid-template-columns: 1fr;
+                font-size: 2rem;
             }
         }
     </style>
@@ -216,61 +169,53 @@
 
     <div class="header">
         <h1>⚡ Light Series</h1>
-        <p data-translate="tagline">Lightweight Fabric modpacks for maximum performance</p>
+        <p data-translate="tagline">Lightweight Fabric modpacks — just performance</p>
     </div>
 
     <div class="grid">
-        <!-- VulkanLight -->
+        <!-- VulkanLight Card -->
         <div class="card">
-            <div class="card-icon vulkan-icon">V</div>
-            <h2>🔥 VulkanLight</h2>
-            <div class="badge" data-translate="vulkan-badge">Vulkan · 32 chunks · 500+ FPS</div>
+            <div class="card-icon">🔥</div>
+            <h2>VulkanLight</h2>
             <p data-translate="vulkan-desc">Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.</p>
             <div class="btn-group">
                 <a href="vulkanlight/" class="btn" data-translate="learn-more">Learn More</a>
-                <a href="#" class="btn btn-primary">.mrpack</a>
-                <a href="#" class="btn">Prism .zip</a>
+                <a href="vulkanlight/downloads/VulkanLight-1.0.0.mrpack" class="btn btn-primary">.mrpack</a>
+                <a href="vulkanlight/downloads/VulkanLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
             </div>
         </div>
 
-        <!-- SodiumLight -->
+        <!-- SodiumLight Card -->
         <div class="card">
-            <div class="card-icon sodium-icon">S</div>
-            <h2>🧪 SodiumLight</h2>
-            <div class="badge" data-translate="sodium-badge">OpenGL · Shaders · 350+ FPS</div>
+            <div class="card-icon">🧪</div>
+            <h2>SodiumLight</h2>
             <p data-translate="sodium-desc">Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.</p>
             <div class="btn-group">
                 <a href="sodiumlight/" class="btn" data-translate="learn-more">Learn More</a>
-                <a href="#" class="btn btn-green">.mrpack</a>
-                <a href="#" class="btn">Prism .zip</a>
+                <a href="sodiumlight/downloads/SodiumLight-1.0.0.mrpack" class="btn btn-green">.mrpack</a>
+                <a href="sodiumlight/downloads/SodiumLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
             </div>
         </div>
     </div>
 
     <div class="footer">
-        <p data-translate="footer">📥 Direct downloads from GitHub. Modrinth: <a href="#">VulkanLight</a> · <a href="#">SodiumLight</a></p>
+        <p>Light Series — simple, lightweight, no bloat.</p>
     </div>
 </div>
 
 <script>
     const translations = {
         en: {
-            tagline: "Lightweight Fabric modpacks for maximum performance",
-            "vulkan-badge": "Vulkan · 32 chunks · 500+ FPS",
+            tagline: "Lightweight Fabric modpacks — just performance",
             "vulkan-desc": "Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.",
-            "sodium-badge": "OpenGL · Shaders · 350+ FPS",
             "sodium-desc": "Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.",
-            "learn-more": "Learn More",
-            footer: "📥 Direct downloads from GitHub. Modrinth: VulkanLight · SodiumLight"
+            "learn-more": "Learn More"
         },
         ru: {
-            tagline: "Лёгкие сборки на Fabric для максимальной производительности",
-            "vulkan-badge": "Vulkan · 32 чанка · 500+ FPS",
+            tagline: "Лёгкие сборки на Fabric — просто производительность",
             "vulkan-desc": "Сборка на VulkanMod. Лучший выбор для старых ПК и слабых видеокарт. Без Sodium и мусора.",
-            "sodium-badge": "OpenGL · Шейдеры · 350+ FPS",
             "sodium-desc": "Сборка на Sodium + Iris. Полная поддержка шейдеров, максимальная совместимость, стабильный FPS.",
-            "learn-more": "Подробнее",
-            footer: "📥 Прямые загрузки с GitHub. Modrinth: VulkanLight · SodiumLight"
+            "learn-more": "Подробнее"
         }
     };
 
