@@ -27,6 +27,19 @@
             background-clip: text;
             color: transparent;
         }
+        .lang-switch {
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+        .lang-switch button {
+            background: #2a2a2a;
+            border: none;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
         .grid {
             display: flex;
             justify-content: center;
@@ -55,11 +68,6 @@
         .card h2 {
             font-size: 1.8rem;
             margin-bottom: 0.5rem;
-        }
-        .card p {
-            color: #aaa;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
         }
         .badge {
             display: inline-block;
@@ -91,21 +99,28 @@
             color: #555;
             font-size: 0.8rem;
         }
+        [data-translate] {
+            transition: opacity 0.1s;
+        }
     </style>
 </head>
 <body>
+    <div class="lang-switch">
+        <button onclick="setLanguage('en')">English</button>
+        <button onclick="setLanguage('ru')">Русский</button>
+    </div>
     <div class="header">
         <h1>⚡ Light Series</h1>
-        <p>Lightweight Fabric modpacks for maximum performance</p>
+        <p data-translate="tagline">Lightweight Fabric modpacks for maximum performance</p>
     </div>
     <div class="grid">
         <!-- VulkanLight Card -->
         <div class="card">
             <img src="assets/images/vulkan-icon.png" alt="VulkanLight">
             <h2>🔥 VulkanLight</h2>
-            <div class="badge">Vulkan · 32 chunks · 500+ FPS</div>
-            <p>Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.</p>
-            <a href="vulkanlight/" class="btn">Learn More</a>
+            <div class="badge" data-translate="vulkan-badge">Vulkan · 32 chunks · 500+ FPS</div>
+            <p data-translate="vulkan-desc">Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.</p>
+            <a href="vulkanlight/" class="btn" data-translate="learn-more">Learn More</a>
             <a href="vulkanlight/downloads/VulkanLight-1.0.0.mrpack" class="btn btn-primary">.mrpack</a>
             <a href="vulkanlight/downloads/VulkanLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
         </div>
@@ -113,15 +128,69 @@
         <div class="card">
             <img src="assets/images/sodium-icon.png" alt="SodiumLight">
             <h2>🧪 SodiumLight</h2>
-            <div class="badge">OpenGL · Shaders · 350+ FPS</div>
-            <p>Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.</p>
-            <a href="sodiumlight/" class="btn">Learn More</a>
+            <div class="badge" data-translate="sodium-badge">OpenGL · Shaders · 350+ FPS</div>
+            <p data-translate="sodium-desc">Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.</p>
+            <a href="sodiumlight/" class="btn" data-translate="learn-more">Learn More</a>
             <a href="sodiumlight/downloads/SodiumLight-1.0.0.mrpack" class="btn btn-green">.mrpack</a>
             <a href="sodiumlight/downloads/SodiumLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
         </div>
     </div>
     <div class="footer">
-        <p>📥 All downloads are direct links from GitHub. Modrinth pages: <a href="https://modrinth.com/modpack/vulkanlight">VulkanLight</a> · <a href="https://modrinth.com/project/sodiumlight">SodiumLight</a></p>
+        <p data-translate="footer">📥 All downloads are direct links from GitHub. Modrinth pages: <a href="https://modrinth.com/modpack/vulkanlight">VulkanLight</a> · <a href="https://modrinth.com/project/sodiumlight">SodiumLight</a></p>
     </div>
+
+    <script>
+        const translations = {
+            en: {
+                tagline: "Lightweight Fabric modpacks for maximum performance",
+                "vulkan-badge": "Vulkan · 32 chunks · 500+ FPS",
+                "vulkan-desc": "Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.",
+                "sodium-badge": "OpenGL · Shaders · 350+ FPS",
+                "sodium-desc": "Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.",
+                "learn-more": "Learn More",
+                footer: "📥 All downloads are direct links from GitHub. Modrinth pages: VulkanLight · SodiumLight"
+            },
+            ru: {
+                tagline: "Лёгкие сборки на Fabric для максимальной производительности",
+                "vulkan-badge": "Vulkan · 32 чанка · 500+ FPS",
+                "vulkan-desc": "Сборка на VulkanMod. Лучший выбор для старых ПК и слабых видеокарт. Без Sodium и мусора.",
+                "sodium-badge": "OpenGL · Шейдеры · 350+ FPS",
+                "sodium-desc": "Сборка на Sodium + Iris. Полная поддержка шейдеров, максимальная совместимость, стабильный FPS.",
+                "learn-more": "Подробнее",
+                footer: "📥 Все загрузки — прямые ссылки с GitHub. Страницы на Modrinth: VulkanLight · SodiumLight"
+            }
+        };
+
+        function getBrowserLanguage() {
+            const lang = navigator.language || navigator.userLanguage;
+            return lang.startsWith('ru') ? 'ru' : 'en';
+        }
+
+        function setLanguage(lang) {
+            localStorage.setItem('vulkanlight-lang', lang);
+            applyLanguage(lang);
+        }
+
+        function applyLanguage(lang) {
+            const elements = document.querySelectorAll('[data-translate]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang] && translations[lang][key]) {
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        el.placeholder = translations[lang][key];
+                    } else {
+                        el.innerHTML = translations[lang][key];
+                    }
+                }
+            });
+        }
+
+        // Определяем язык: сохранённый в localStorage, или язык браузера, или английский
+        let currentLang = localStorage.getItem('vulkanlight-lang');
+        if (!currentLang) {
+            currentLang = getBrowserLanguage();
+        }
+        applyLanguage(currentLang);
+    </script>
 </body>
 </html>
