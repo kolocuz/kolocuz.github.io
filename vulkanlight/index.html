@@ -2,69 +2,137 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VulkanLight · Vulkan-based modpack</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        /* Скопируй стили из главной страницы (все стили) */
+        /* и добавь специфичные для страницы проекта: */
+        .content {
+            background: rgba(20,20,20,0.6);
+            border-radius: 28px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .download-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+        .download-table th, .download-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .download-table th {
+            color: #ffaa66;
+        }
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .screenshot-grid img {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid #2a2a2a;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            color: #ff884d;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body>
+<div class="container">
     <div class="lang-switch">
         <button onclick="setLanguage('en')">English</button>
         <button onclick="setLanguage('ru')">Русский</button>
     </div>
-    <div class="container">
+
+    <div class="header">
         <h1>🔥 VulkanLight</h1>
-        <p data-translate="description">Lightweight Fabric modpack built around VulkanMod. Maximum FPS on old PCs.</p>
-        
-        <h2 data-translate="downloads-title">📦 Downloads</h2>
-        <table>
-            <tr><th data-translate="version">Version</th><th>.mrpack</th><th>.zip (Prism)</th><th data-translate="changelog">Changelog</th></tr>
-            <tr><td>v1.0.0</td><td><a href="downloads/VulkanLight-1.0.0.mrpack">Download</a></td><td><a href="downloads/VulkanLight-1.0.0-Prism.zip">Download</a></td><td><a href="#" data-translate="full-changelog">Full changelog</a></td></tr>
-        </table>
-        
-        <a href="../index.html" data-translate="back">← Back to Hub</a>
+        <p data-translate="desc">Lightweight Fabric modpack built around VulkanMod</p>
     </div>
 
-    <script>
-        const translations = {
-            en: {
-                description: "Lightweight Fabric modpack built around VulkanMod. Maximum FPS on old PCs.",
-                "downloads-title": "📦 Downloads",
-                version: "Version",
-                changelog: "Changelog",
-                "full-changelog": "Full changelog",
-                back: "← Back to Hub"
-            },
-            ru: {
-                description: "Лёгкая сборка на Fabric на базе VulkanMod. Максимальный FPS на старых ПК.",
-                "downloads-title": "📦 Загрузки",
-                version: "Версия",
-                changelog: "Список изменений",
-                "full-changelog": "Полный список изменений",
-                back: "← Назад на главную"
+    <div class="content">
+        <h2 data-translate="features">⚡ Key Features</h2>
+        <ul>
+            <li data-translate="feature1">VulkanMod + Not Enough Vulkan — modern rendering</li>
+            <li data-translate="feature2">32 chunks render distance without major FPS drops</li>
+            <li data-translate="feature3">500+ FPS on GTX 1060 / FX-4100</li>
+            <li data-translate="feature4">No Sodium, no Iris, no bloat</li>
+        </ul>
+
+        <h2 data-translate="downloads">📦 Downloads</h2>
+        <table class="download-table">
+            <tr><th data-translate="version">Version</th><th>.mrpack</th><th>.zip (Prism)</th><th data-translate="changelog">Changelog</th></tr>
+            <tr><td>v1.0.0</td><td><a href="#">Download</a></td><td><a href="#">Download</a></td><td><a href="#">Full changelog</a></td></tr>
+        </table>
+
+        <h2 data-translate="screenshots">🖼️ Screenshots</h2>
+        <div class="screenshot-grid">
+            <img src="screenshots/fps1.png" alt="FPS 521">
+            <img src="screenshots/chunks32.png" alt="32 chunks">
+        </div>
+    </div>
+
+    <a href="../index.html" class="back-link" data-translate="back">← Back to Hub</a>
+</div>
+
+<script>
+    const translations = {
+        en: {
+            desc: "Lightweight Fabric modpack built around VulkanMod",
+            features: "⚡ Key Features",
+            feature1: "VulkanMod + Not Enough Vulkan — modern rendering",
+            feature2: "32 chunks render distance without major FPS drops",
+            feature3: "500+ FPS on GTX 1060 / FX-4100",
+            feature4: "No Sodium, no Iris, no bloat",
+            downloads: "📦 Downloads",
+            version: "Version",
+            changelog: "Changelog",
+            screenshots: "🖼️ Screenshots",
+            back: "← Back to Hub"
+        },
+        ru: {
+            desc: "Лёгкая сборка на Fabric на базе VulkanMod",
+            features: "⚡ Ключевые особенности",
+            feature1: "VulkanMod + Not Enough Vulkan — современный рендеринг",
+            feature2: "32 чанка прорисовки без сильных просадок FPS",
+            feature3: "500+ FPS на GTX 1060 / FX-4100",
+            feature4: "Без Sodium, Iris и мусора",
+            downloads: "📦 Загрузки",
+            version: "Версия",
+            changelog: "Изменения",
+            screenshots: "🖼️ Скриншоты",
+            back: "← Назад на главную"
+        }
+    };
+
+    function getBrowserLanguage() {
+        return navigator.language.startsWith('ru') ? 'ru' : 'en';
+    }
+
+    function setLanguage(lang) {
+        localStorage.setItem('lightseries-lang', lang);
+        applyLanguage(lang);
+    }
+
+    function applyLanguage(lang) {
+        document.querySelectorAll('[data-translate]').forEach(el => {
+            const key = el.getAttribute('data-translate');
+            if (translations[lang] && translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
             }
-        };
+        });
+    }
 
-        function getBrowserLanguage() {
-            const lang = navigator.language || navigator.userLanguage;
-            return lang.startsWith('ru') ? 'ru' : 'en';
-        }
-
-        function setLanguage(lang) {
-            localStorage.setItem('vulkanlight-lang', lang);
-            applyLanguage(lang);
-        }
-
-        function applyLanguage(lang) {
-            document.querySelectorAll('[data-translate]').forEach(el => {
-                const key = el.getAttribute('data-translate');
-                if (translations[lang] && translations[lang][key]) {
-                    el.innerHTML = translations[lang][key];
-                }
-            });
-        }
-
-        let currentLang = localStorage.getItem('vulkanlight-lang');
-        if (!currentLang) currentLang = getBrowserLanguage();
-        applyLanguage(currentLang);
-    </script>
+    let currentLang = localStorage.getItem('lightseries-lang');
+    if (!currentLang) currentLang = getBrowserLanguage();
+    applyLanguage(currentLang);
+</script>
 </body>
 </html>
