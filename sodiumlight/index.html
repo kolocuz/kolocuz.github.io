@@ -61,7 +61,10 @@
         .btn-mrpack:hover { background: #008833; transform: scale(1.02); }
         .btn-zip { background: #2a2a2a; color: #00cc55; border: 1px solid #00aa44; }
         .btn-zip:hover { background: #3a3a3a; transform: scale(1.02); }
-        .back-link { display: inline-block; margin-top: 1rem; color: #00cc55; text-decoration: none; }
+        .modrinth-link { text-align: center; margin-top: 1rem; font-size: 0.85rem; }
+        .modrinth-link a { color: #888; text-decoration: none; transition: color 0.2s; }
+        .modrinth-link a:hover { color: #00cc55; text-decoration: underline; }
+        .back-link { display: inline-block; margin-top: 2rem; color: #00cc55; text-decoration: none; }
         .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #2a2a2a; color: #666; font-size: 0.8rem; }
         @media (max-width: 700px) { .container { padding: 1rem; } .header h1 { font-size: 2rem; } }
     </style>
@@ -89,6 +92,9 @@
             <a href="https://github.com/kolocuz/kolocuz.github.io/releases/download/files/SodiumLight-1.0.0.mrpack" class="btn btn-mrpack" data-translate="download-mrpack">📦 .mrpack</a>
             <a href="https://github.com/kolocuz/kolocuz.github.io/releases/download/files/SodiumLight-1.0.0.zip" class="btn btn-zip" data-translate="download-zip">📦 .zip (Prism)</a>
         </div>
+        <div class="modrinth-link">
+            <a href="https://modrinth.com/project/sodiumlight" target="_blank" data-translate="modrinth-link">Also available on Modrinth</a>
+        </div>
     </div>
     <a href="../index.html" class="back-link" data-translate="back">← Back to Hub</a>
     <div class="footer"><p>SodiumLight — just smooth Minecraft with shaders.</p></div>
@@ -104,6 +110,7 @@
             feature4: "Full mod compatibility, stable FPS",
             "download-mrpack": "📦 .mrpack",
             "download-zip": "📦 .zip (Prism)",
+            "modrinth-link": "Also available on Modrinth",
             back: "← Back to Hub"
         },
         ru: {
@@ -115,6 +122,7 @@
             feature4: "Полная совместимость с модами, стабильный FPS",
             "download-mrpack": "📦 .mrpack",
             "download-zip": "📦 .zip (Prism)",
+            "modrinth-link": "Также доступно на Modrinth",
             back: "← Назад на главную"
         }
     };
