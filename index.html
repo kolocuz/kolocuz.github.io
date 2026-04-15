@@ -76,14 +76,19 @@
             backdrop-filter: blur(4px);
             border-radius: 28px;
             width: 300px;
-            padding: 1.8rem;
+            padding: 2rem 1.8rem;
             text-align: center;
             transition: all 0.3s ease;
             border: 1px solid #2a2a2a;
         }
         .card:hover {
             transform: translateY(-4px);
+        }
+        .vulkan-card:hover {
             border-color: #ff6600;
+        }
+        .sodium-card:hover {
+            border-color: #00aa44;
         }
 
         .card-icon {
@@ -100,46 +105,28 @@
             color: #aaa;
             font-size: 0.85rem;
             line-height: 1.5;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.8rem;
         }
 
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        .btn {
+        .btn-view {
             display: inline-block;
-            background: #2a2a2a;
-            color: #ddd;
-            padding: 0.4rem 1rem;
-            border-radius: 30px;
+            padding: 0.7rem 1.8rem;
+            border-radius: 40px;
             text-decoration: none;
-            font-size: 0.75rem;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 0.9rem;
             transition: all 0.2s;
+            background: #2a2a2a;
+            color: white;
             border: 1px solid #3a3a3a;
         }
-        .btn:hover {
-            background: #3a3a3a;
-            color: white;
-        }
-        .btn-primary {
+        .vulkan-btn:hover {
             background: #ff6600;
             border-color: #ff6600;
-            color: white;
         }
-        .btn-primary:hover {
-            background: #ff5500;
-        }
-        .btn-green {
+        .sodium-btn:hover {
             background: #00aa44;
             border-color: #00aa44;
-            color: white;
-        }
-        .btn-green:hover {
-            background: #008833;
         }
 
         .footer {
@@ -174,27 +161,19 @@
 
     <div class="grid">
         <!-- VulkanLight Card -->
-        <div class="card">
+        <div class="card vulkan-card">
             <div class="card-icon">🔥</div>
             <h2>VulkanLight</h2>
             <p data-translate="vulkan-desc">Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.</p>
-            <div class="btn-group">
-                <a href="vulkanlight/" class="btn" data-translate="learn-more">Learn More</a>
-                <a href="vulkanlight/downloads/VulkanLight-1.0.0.mrpack" class="btn btn-primary">.mrpack</a>
-                <a href="vulkanlight/downloads/VulkanLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
-            </div>
+            <a href="vulkanlight/" class="btn-view vulkan-btn" data-translate="view">View</a>
         </div>
 
         <!-- SodiumLight Card -->
-        <div class="card">
+        <div class="card sodium-card">
             <div class="card-icon">🧪</div>
             <h2>SodiumLight</h2>
             <p data-translate="sodium-desc">Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.</p>
-            <div class="btn-group">
-                <a href="sodiumlight/" class="btn" data-translate="learn-more">Learn More</a>
-                <a href="sodiumlight/downloads/SodiumLight-1.0.0.mrpack" class="btn btn-green">.mrpack</a>
-                <a href="sodiumlight/downloads/SodiumLight-1.0.0-Prism.zip" class="btn">Prism .zip</a>
-            </div>
+            <a href="sodiumlight/" class="btn-view sodium-btn" data-translate="view">View</a>
         </div>
     </div>
 
@@ -209,13 +188,13 @@
             tagline: "Lightweight Fabric modpacks — just performance",
             "vulkan-desc": "Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.",
             "sodium-desc": "Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.",
-            "learn-more": "Learn More"
+            "view": "View"
         },
         ru: {
             tagline: "Лёгкие сборки на Fabric — просто производительность",
             "vulkan-desc": "Сборка на VulkanMod. Лучший выбор для старых ПК и слабых видеокарт. Без Sodium и мусора.",
             "sodium-desc": "Сборка на Sodium + Iris. Полная поддержка шейдеров, максимальная совместимость, стабильный FPS.",
-            "learn-more": "Подробнее"
+            "view": "Посмотреть"
         }
     };
 
