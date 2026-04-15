@@ -5,25 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VulkanLight · SodiumLight</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #0a0a0a 0%, #121212 100%);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             color: #e0e0e0;
             min-height: 100vh;
         }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
         .lang-switch {
             display: flex;
             justify-content: flex-end;
@@ -40,15 +29,8 @@
             font-size: 0.8rem;
             transition: all 0.2s;
         }
-        .lang-switch button:hover {
-            background: #3a3a3a;
-            color: white;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
+        .lang-switch button:hover { background: #3a3a3a; color: white; }
+        .header { text-align: center; margin-bottom: 3rem; }
         .header h1 {
             font-size: 3rem;
             font-weight: 700;
@@ -56,95 +38,40 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 0.5rem;
         }
-        .header p {
-            color: #888;
-            font-size: 1rem;
-        }
-
-        .grid {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-            margin-bottom: 3rem;
-        }
-
+        .header p { color: #888; font-size: 1rem; margin-top: 0.5rem; }
+        .grid { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 3rem; }
         .card {
-            background: rgba(20, 20, 20, 0.8);
+            background: rgba(20,20,20,0.8);
             backdrop-filter: blur(4px);
             border-radius: 28px;
             width: 300px;
-            padding: 2rem 1.8rem;
+            padding: 1.8rem;
             text-align: center;
             transition: all 0.3s ease;
             border: 1px solid #2a2a2a;
         }
-        .card:hover {
-            transform: translateY(-4px);
-        }
-        .vulkan-card:hover {
-            border-color: #ff6600;
-        }
-        .sodium-card:hover {
-            border-color: #00aa44;
-        }
-
-        .card-icon {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .card h2 {
-            font-size: 1.8rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .card p {
-            color: #aaa;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-bottom: 1.8rem;
-        }
-
-        .btn-view {
+        .card:hover { transform: translateY(-4px); border-color: #ff6600; }
+        .card-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+        .card h2 { font-size: 1.8rem; margin-bottom: 0.75rem; }
+        .card p { color: #aaa; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem; }
+        .btn {
             display: inline-block;
-            padding: 0.7rem 1.8rem;
+            background: #ff6600;
+            color: white;
+            padding: 0.6rem 1.5rem;
             border-radius: 40px;
             text-decoration: none;
+            font-size: 1rem;
             font-weight: 600;
-            font-size: 0.9rem;
             transition: all 0.2s;
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #3a3a3a;
+            border: none;
         }
-        .vulkan-btn:hover {
-            background: #ff6600;
-            border-color: #ff6600;
-        }
-        .sodium-btn:hover {
-            background: #00aa44;
-            border-color: #00aa44;
-        }
-
-        .footer {
-            text-align: center;
-            padding-top: 2rem;
-            border-top: 1px solid #2a2a2a;
-            color: #666;
-            font-size: 0.75rem;
-        }
-
-        @media (max-width: 700px) {
-            .container {
-                padding: 1rem;
-            }
-            .header h1 {
-                font-size: 2rem;
-            }
-        }
+        .btn:hover { background: #ff5500; transform: scale(1.02); }
+        .btn-green { background: #00aa44; }
+        .btn-green:hover { background: #008833; }
+        .footer { text-align: center; padding-top: 2rem; border-top: 1px solid #2a2a2a; color: #666; font-size: 0.75rem; }
+        @media (max-width: 700px) { .container { padding: 1rem; } .header h1 { font-size: 2rem; } }
     </style>
 </head>
 <body>
@@ -153,69 +80,49 @@
         <button onclick="setLanguage('en')">English</button>
         <button onclick="setLanguage('ru')">Русский</button>
     </div>
-
     <div class="header">
         <h1>⚡ Light Series</h1>
-        <p data-translate="tagline">Lightweight Fabric modpacks — just performance</p>
+        <p data-translate="tagline">Lightweight Fabric modpacks — maximum performance</p>
     </div>
-
     <div class="grid">
-        <!-- VulkanLight Card -->
-        <div class="card vulkan-card">
+        <div class="card">
             <div class="card-icon">🔥</div>
             <h2>VulkanLight</h2>
-            <p data-translate="vulkan-desc">Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.</p>
-            <a href="vulkanlight/" class="btn-view vulkan-btn" data-translate="view">View</a>
+            <p data-translate="vulkan-desc">Built around VulkanMod. Maximum performance and high FPS even on old PCs. No Sodium, no bloat.</p>
+            <a href="vulkanlight/" class="btn" data-translate="view">View Project →</a>
         </div>
-
-        <!-- SodiumLight Card -->
-        <div class="card sodium-card">
+        <div class="card">
             <div class="card-icon">🧪</div>
             <h2>SodiumLight</h2>
-            <p data-translate="sodium-desc">Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.</p>
-            <a href="sodiumlight/" class="btn-view sodium-btn" data-translate="view">View</a>
+            <p data-translate="sodium-desc">Built around Sodium + Iris. Maximum compatibility, stable FPS, full shader support.</p>
+            <a href="sodiumlight/" class="btn btn-green" data-translate="view">View Project →</a>
         </div>
     </div>
-
-    <div class="footer">
-        <p>Light Series — simple, lightweight, no bloat.</p>
-    </div>
+    <div class="footer"><p>Light Series — simple, lightweight, no bloat.</p></div>
 </div>
-
 <script>
     const translations = {
         en: {
-            tagline: "Lightweight Fabric modpacks — just performance",
-            "vulkan-desc": "Built around VulkanMod. Best for older PCs and weak GPUs. No Sodium, no bloat.",
-            "sodium-desc": "Built around Sodium + Iris. Full shader support, maximum compatibility, stable FPS.",
-            "view": "View"
+            tagline: "Lightweight Fabric modpacks — maximum performance",
+            "vulkan-desc": "Built around VulkanMod. Maximum performance and high FPS even on old PCs. No Sodium, no bloat.",
+            "sodium-desc": "Built around Sodium + Iris. Maximum compatibility, stable FPS, full shader support.",
+            "view": "View Project →"
         },
         ru: {
-            tagline: "Лёгкие сборки на Fabric — просто производительность",
-            "vulkan-desc": "Сборка на VulkanMod. Лучший выбор для старых ПК и слабых видеокарт. Без Sodium и мусора.",
-            "sodium-desc": "Сборка на Sodium + Iris. Полная поддержка шейдеров, максимальная совместимость, стабильный FPS.",
-            "view": "Посмотреть"
+            tagline: "Лёгкие сборки на Fabric — максимальная производительность",
+            "vulkan-desc": "Сборка на VulkanMod. Максимальная производительность и высокий FPS даже на старых ПК. Без Sodium и мусора.",
+            "sodium-desc": "Сборка на Sodium + Iris. Максимальная совместимость, стабильный FPS, полная поддержка шейдеров.",
+            "view": "Посмотреть →"
         }
     };
-
-    function getBrowserLanguage() {
-        return navigator.language.startsWith('ru') ? 'ru' : 'en';
-    }
-
-    function setLanguage(lang) {
-        localStorage.setItem('lightseries-lang', lang);
-        applyLanguage(lang);
-    }
-
+    function getBrowserLanguage() { return navigator.language.startsWith('ru') ? 'ru' : 'en'; }
+    function setLanguage(lang) { localStorage.setItem('lightseries-lang', lang); applyLanguage(lang); }
     function applyLanguage(lang) {
         document.querySelectorAll('[data-translate]').forEach(el => {
             const key = el.getAttribute('data-translate');
-            if (translations[lang] && translations[lang][key]) {
-                el.innerHTML = translations[lang][key];
-            }
+            if (translations[lang] && translations[lang][key]) el.innerHTML = translations[lang][key];
         });
     }
-
     let currentLang = localStorage.getItem('lightseries-lang');
     if (!currentLang) currentLang = getBrowserLanguage();
     applyLanguage(currentLang);
