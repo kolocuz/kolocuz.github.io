@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>VulkanLight · Vulkan-based modpack</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <div class="lang-switch">
+        <button onclick="setLanguage('en')">English</button>
+        <button onclick="setLanguage('ru')">Русский</button>
+    </div>
+    <div class="container">
+        <h1>🔥 VulkanLight</h1>
+        <p data-translate="description">Lightweight Fabric modpack built around VulkanMod. Maximum FPS on old PCs.</p>
+        
+        <h2 data-translate="downloads-title">📦 Downloads</h2>
+        <table>
+            <tr><th data-translate="version">Version</th><th>.mrpack</th><th>.zip (Prism)</th><th data-translate="changelog">Changelog</th></tr>
+            <tr><td>v1.0.0</td><td><a href="downloads/VulkanLight-1.0.0.mrpack">Download</a></td><td><a href="downloads/VulkanLight-1.0.0-Prism.zip">Download</a></td><td><a href="#" data-translate="full-changelog">Full changelog</a></td></tr>
+        </table>
+        
+        <a href="../index.html" data-translate="back">← Back to Hub</a>
+    </div>
+
+    <script>
+        const translations = {
+            en: {
+                description: "Lightweight Fabric modpack built around VulkanMod. Maximum FPS on old PCs.",
+                "downloads-title": "📦 Downloads",
+                version: "Version",
+                changelog: "Changelog",
+                "full-changelog": "Full changelog",
+                back: "← Back to Hub"
+            },
+            ru: {
+                description: "Лёгкая сборка на Fabric на базе VulkanMod. Максимальный FPS на старых ПК.",
+                "downloads-title": "📦 Загрузки",
+                version: "Версия",
+                changelog: "Список изменений",
+                "full-changelog": "Полный список изменений",
+                back: "← Назад на главную"
+            }
+        };
+
+        function getBrowserLanguage() {
+            const lang = navigator.language || navigator.userLanguage;
+            return lang.startsWith('ru') ? 'ru' : 'en';
+        }
+
+        function setLanguage(lang) {
+            localStorage.setItem('vulkanlight-lang', lang);
+            applyLanguage(lang);
+        }
+
+        function applyLanguage(lang) {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang] && translations[lang][key]) {
+                    el.innerHTML = translations[lang][key];
+                }
+            });
+        }
+
+        let currentLang = localStorage.getItem('vulkanlight-lang');
+        if (!currentLang) currentLang = getBrowserLanguage();
+        applyLanguage(currentLang);
+    </script>
+</body>
+</html>
