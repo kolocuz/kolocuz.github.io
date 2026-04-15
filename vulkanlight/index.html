@@ -5,25 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VulkanLight · Vulkan-based modpack</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #0a0a0a 0%, #121212 100%);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             color: #e0e0e0;
             min-height: 100vh;
         }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
         .lang-switch {
             display: flex;
             justify-content: flex-end;
@@ -38,18 +27,9 @@
             border-radius: 30px;
             cursor: pointer;
             font-size: 0.8rem;
-            transition: all 0.2s;
         }
-        .lang-switch button:hover {
-            background: #3a3a3a;
-            color: white;
-            border-color: #ff6600;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
+        .lang-switch button:hover { background: #3a3a3a; color: white; border-color: #ff6600; }
+        .header { text-align: center; margin-bottom: 2rem; }
         .header h1 {
             font-size: 3rem;
             font-weight: 700;
@@ -57,122 +37,33 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 0.5rem;
         }
-        .header p {
-            color: #888;
-            font-size: 1.1rem;
-        }
-
-        .content {
-            background: rgba(20,20,20,0.6);
-            border-radius: 28px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 1px solid #2a2a2a;
-        }
-        .content h2 {
-            color: #ff884d;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-        }
-        .content ul {
-            list-style: none;
-            padding-left: 0;
-        }
-        .content li {
-            padding-left: 1.2rem;
-            margin-bottom: 0.5rem;
-            position: relative;
-        }
-        .content li::before {
-            content: "▹";
-            position: absolute;
-            left: 0;
-            color: #ff884d;
-        }
-
-        .screenshot {
-            text-align: center;
-            margin: 2rem 0;
-        }
-        .screenshot img {
-            max-width: 100%;
-            border-radius: 20px;
-            border: 1px solid #2a2a2a;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        }
-
-        .download-section {
-            margin: 2rem 0;
-        }
-        .download-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-        }
+        .header p { color: #888; font-size: 1rem; }
+        .content { background: rgba(20,20,20,0.6); border-radius: 28px; padding: 2rem; margin-bottom: 2rem; border: 1px solid #2a2a2a; }
+        .content h2 { color: #ff884d; margin-bottom: 1rem; }
+        .content ul { list-style: none; padding-left: 0; }
+        .content li { padding-left: 1.2rem; margin-bottom: 0.5rem; position: relative; }
+        .content li::before { content: "▹"; position: absolute; left: 0; color: #ff884d; }
+        .screenshot { text-align: center; margin: 2rem 0; }
+        .screenshot img { max-width: 100%; border-radius: 20px; border: 1px solid #2a2a2a; }
+        .download-buttons { display: flex; justify-content: center; gap: 1.5rem; margin: 2rem 0; flex-wrap: wrap; }
         .btn {
             display: inline-block;
-            padding: 0.8rem 1.5rem;
-            border-radius: 40px;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
             text-decoration: none;
+            font-size: 1rem;
             font-weight: 600;
             transition: all 0.2s;
-        }
-        .btn-mrpack {
-            background: #ff6600;
-            color: white;
-            border: none;
-        }
-        .btn-mrpack:hover {
-            background: #ff5500;
-            transform: scale(1.02);
-        }
-        .btn-zip {
-            background: #2a2a2a;
-            color: #ff884d;
-            border: 1px solid #ff6600;
-        }
-        .btn-zip:hover {
-            background: #3a3a3a;
-            transform: scale(1.02);
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 1rem;
-            color: #ff884d;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        .back-link:hover {
-            color: #ffaa66;
-        }
-
-        .footer {
             text-align: center;
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #2a2a2a;
-            font-size: 0.8rem;
-            color: #666;
         }
-
-        @media (max-width: 700px) {
-            .container {
-                padding: 1rem;
-            }
-            .header h1 {
-                font-size: 2rem;
-            }
-            .content {
-                padding: 1.2rem;
-            }
-            .btn {
-                padding: 0.6rem 1.2rem;
-            }
-        }
+        .btn-mrpack { background: #ff6600; color: white; border: none; }
+        .btn-mrpack:hover { background: #ff5500; transform: scale(1.02); }
+        .btn-zip { background: #2a2a2a; color: #ff884d; border: 1px solid #ff6600; }
+        .btn-zip:hover { background: #3a3a3a; transform: scale(1.02); }
+        .back-link { display: inline-block; margin-top: 1rem; color: #ff884d; text-decoration: none; }
+        .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #2a2a2a; color: #666; font-size: 0.8rem; }
+        @media (max-width: 700px) { .container { padding: 1rem; } .header h1 { font-size: 2rem; } }
     </style>
 </head>
 <body>
@@ -181,40 +72,26 @@
         <button onclick="setLanguage('en')">English</button>
         <button onclick="setLanguage('ru')">Русский</button>
     </div>
-
     <div class="header">
         <h1>🔥 VulkanLight</h1>
         <p data-translate="desc">Lightweight Fabric modpack built around VulkanMod</p>
     </div>
-
     <div class="content">
         <h2 data-translate="features">⚡ Key Features</h2>
         <ul>
             <li data-translate="feature1">VulkanMod + Not Enough Vulkan — modern rendering</li>
             <li data-translate="feature2">32 chunks render distance without major FPS drops</li>
-            <li data-translate="feature3">Best for older PCs and weak GPUs</li>
+            <li data-translate="feature3">Maximum performance and high FPS even on old PCs</li>
             <li data-translate="feature4">No Sodium, no Iris, no bloat</li>
         </ul>
-
-        <div class="screenshot">
-            <img src="prew.png" alt="VulkanLight screenshot">
-        </div>
-
-        <div class="download-section">
-            <h2 data-translate="downloads">📦 Downloads</h2>
-            <div class="download-buttons">
-                <a href="https://github.com/kolocuz/kolocuz.github.io/releases/download/files/VulkanLight-1.0.0.zip" class="btn btn-zip" data-translate="prism-zip">📥 Prism .zip</a>
-            </div>
-            <p style="margin-top: 0.8rem; font-size: 0.8rem; color: #666;" data-translate="note">Modrinth version: <a href="https://modrinth.com/modpack/vulkanlight" style="color:#ff884d;">VulkanLight on Modrinth</a></p>
+        <div class="screenshot"><img src="prew.png" alt="VulkanLight screenshot"></div>
+        <div class="download-buttons">
+            <a href="https://github.com/kolocuz/kolocuz.github.io/releases/download/files/VulkanLight-1.0.0.zip" class="btn btn-zip" data-translate="download-zip">📦 Download .zip (Prism)</a>
         </div>
     </div>
-
     <a href="../index.html" class="back-link" data-translate="back">← Back to Hub</a>
-    <div class="footer">
-        <p>VulkanLight — just Vulkan. Just performance.</p>
-    </div>
+    <div class="footer"><p>VulkanLight — just Vulkan. Just performance.</p></div>
 </div>
-
 <script>
     const translations = {
         en: {
@@ -222,11 +99,9 @@
             features: "⚡ Key Features",
             feature1: "VulkanMod + Not Enough Vulkan — modern rendering",
             feature2: "32 chunks render distance without major FPS drops",
-            feature3: "Best for older PCs and weak GPUs",
+            feature3: "Maximum performance and high FPS even on old PCs",
             feature4: "No Sodium, no Iris, no bloat",
-            downloads: "📦 Downloads",
-            "prism-zip": "📥 Prism .zip",
-            note: "Modrinth version:",
+            "download-zip": "📦 Download .zip (Prism)",
             back: "← Back to Hub"
         },
         ru: {
@@ -234,33 +109,20 @@
             features: "⚡ Ключевые особенности",
             feature1: "VulkanMod + Not Enough Vulkan — современный рендеринг",
             feature2: "32 чанка прорисовки без сильных просадок FPS",
-            feature3: "Лучший выбор для старых ПК и слабых видеокарт",
+            feature3: "Максимальная производительность и высокий FPS даже на старых ПК",
             feature4: "Без Sodium, Iris и мусора",
-            downloads: "📦 Загрузки",
-            "prism-zip": "📥 Prism .zip",
-            note: "Версия на Modrinth:",
+            "download-zip": "📦 Скачать .zip (Prism)",
             back: "← Назад на главную"
         }
     };
-
-    function getBrowserLanguage() {
-        return navigator.language.startsWith('ru') ? 'ru' : 'en';
-    }
-
-    function setLanguage(lang) {
-        localStorage.setItem('vulkanlight-lang', lang);
-        applyLanguage(lang);
-    }
-
+    function getBrowserLanguage() { return navigator.language.startsWith('ru') ? 'ru' : 'en'; }
+    function setLanguage(lang) { localStorage.setItem('vulkanlight-lang', lang); applyLanguage(lang); }
     function applyLanguage(lang) {
         document.querySelectorAll('[data-translate]').forEach(el => {
             const key = el.getAttribute('data-translate');
-            if (translations[lang] && translations[lang][key]) {
-                el.innerHTML = translations[lang][key];
-            }
+            if (translations[lang] && translations[lang][key]) el.innerHTML = translations[lang][key];
         });
     }
-
     let currentLang = localStorage.getItem('vulkanlight-lang');
     if (!currentLang) currentLang = getBrowserLanguage();
     applyLanguage(currentLang);
