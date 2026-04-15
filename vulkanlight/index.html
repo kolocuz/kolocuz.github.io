@@ -5,14 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VulkanLight · Vulkan-based modpack</title>
     <style>
-        /* Скопируй стили из главной страницы (все стили) */
-        /* и добавь специфичные для страницы проекта: */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #121212 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .lang-switch {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .lang-switch button {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #ccc;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .lang-switch button:hover {
+            background: #3a3a3a;
+            color: white;
+            border-color: #ff6600;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff884d, #ff4400);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
         .content {
             background: rgba(20,20,20,0.6);
             border-radius: 28px;
             padding: 2rem;
             margin-bottom: 2rem;
+            border: 1px solid #2a2a2a;
         }
+        .content h2 {
+            color: #ff884d;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .content ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .content li {
+            padding-left: 1.2rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        .content li::before {
+            content: "▹";
+            position: absolute;
+            left: 0;
+            color: #ff884d;
+        }
+
+        .screenshot {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        .screenshot img {
+            max-width: 100%;
+            border-radius: 20px;
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
         .download-table {
             width: 100%;
             border-collapse: collapse;
@@ -24,24 +114,46 @@
             border-bottom: 1px solid #2a2a2a;
         }
         .download-table th {
-            color: #ffaa66;
+            color: #ff884d;
         }
-        .screenshot-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1rem;
-            margin: 1.5rem 0;
-        }
-        .screenshot-grid img {
-            width: 100%;
-            border-radius: 16px;
-            border: 1px solid #2a2a2a;
-        }
-        .back-link {
-            display: inline-block;
-            margin-top: 2rem;
+        .download-table a {
             color: #ff884d;
             text-decoration: none;
+        }
+        .download-table a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #ff884d;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover {
+            color: #ffaa66;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #2a2a2a;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .content {
+                padding: 1.2rem;
+            }
         }
     </style>
 </head>
@@ -62,24 +174,25 @@
         <ul>
             <li data-translate="feature1">VulkanMod + Not Enough Vulkan — modern rendering</li>
             <li data-translate="feature2">32 chunks render distance without major FPS drops</li>
-            <li data-translate="feature3">500+ FPS on GTX 1060 / FX-4100</li>
+            <li data-translate="feature3">Best for older PCs and weak GPUs</li>
             <li data-translate="feature4">No Sodium, no Iris, no bloat</li>
         </ul>
+
+        <div class="screenshot">
+            <img src="prew.png" alt="VulkanLight screenshot">
+        </div>
 
         <h2 data-translate="downloads">📦 Downloads</h2>
         <table class="download-table">
             <tr><th data-translate="version">Version</th><th>.mrpack</th><th>.zip (Prism)</th><th data-translate="changelog">Changelog</th></tr>
-            <tr><td>v1.0.0</td><td><a href="#">Download</a></td><td><a href="#">Download</a></td><td><a href="#">Full changelog</a></td></tr>
+            <tr><td>v1.0.0</td><td><a href="downloads/VulkanLight-1.0.0.mrpack">Download</a></td><td><a href="downloads/VulkanLight-1.0.0-Prism.zip">Download</a></td><td><a href="#">Full changelog</a></td></tr>
         </table>
-
-        <h2 data-translate="screenshots">🖼️ Screenshots</h2>
-        <div class="screenshot-grid">
-            <img src="screenshots/fps1.png" alt="FPS 521">
-            <img src="screenshots/chunks32.png" alt="32 chunks">
-        </div>
     </div>
 
     <a href="../index.html" class="back-link" data-translate="back">← Back to Hub</a>
+    <div class="footer">
+        <p>VulkanLight — just Vulkan. Just performance.</p>
+    </div>
 </div>
 
 <script>
@@ -89,12 +202,11 @@
             features: "⚡ Key Features",
             feature1: "VulkanMod + Not Enough Vulkan — modern rendering",
             feature2: "32 chunks render distance without major FPS drops",
-            feature3: "500+ FPS on GTX 1060 / FX-4100",
+            feature3: "Best for older PCs and weak GPUs",
             feature4: "No Sodium, no Iris, no bloat",
             downloads: "📦 Downloads",
             version: "Version",
             changelog: "Changelog",
-            screenshots: "🖼️ Screenshots",
             back: "← Back to Hub"
         },
         ru: {
@@ -102,12 +214,11 @@
             features: "⚡ Ключевые особенности",
             feature1: "VulkanMod + Not Enough Vulkan — современный рендеринг",
             feature2: "32 чанка прорисовки без сильных просадок FPS",
-            feature3: "500+ FPS на GTX 1060 / FX-4100",
+            feature3: "Лучший выбор для старых ПК и слабых видеокарт",
             feature4: "Без Sodium, Iris и мусора",
             downloads: "📦 Загрузки",
             version: "Версия",
             changelog: "Изменения",
-            screenshots: "🖼️ Скриншоты",
             back: "← Назад на главную"
         }
     };
@@ -117,7 +228,7 @@
     }
 
     function setLanguage(lang) {
-        localStorage.setItem('lightseries-lang', lang);
+        localStorage.setItem('vulkanlight-lang', lang);
         applyLanguage(lang);
     }
 
@@ -130,7 +241,7 @@
         });
     }
 
-    let currentLang = localStorage.getItem('lightseries-lang');
+    let currentLang = localStorage.getItem('vulkanlight-lang');
     if (!currentLang) currentLang = getBrowserLanguage();
     applyLanguage(currentLang);
 </script>
