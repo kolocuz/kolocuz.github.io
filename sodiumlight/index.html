@@ -1,1 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SodiumLight · OpenGL modpack with shaders</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #121212 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .lang-switch {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .lang-switch button {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #ccc;
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .lang-switch button:hover {
+            background: #3a3a3a;
+            color: white;
+            border-color: #00aa44;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00cc55, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            background: rgba(20,20,20,0.6);
+            border-radius: 28px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #2a2a2a;
+        }
+        .content h2 {
+            color: #00cc55;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .content ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .content li {
+            padding-left: 1.2rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        .content li::before {
+            content: "▹";
+            position: absolute;
+            left: 0;
+            color: #00cc55;
+        }
+
+        .download-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+        .download-table th, .download-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .download-table th {
+            color: #00cc55;
+        }
+        .download-table a {
+            color: #00cc55;
+            text-decoration: none;
+        }
+        .download-table a:hover {
+            text-decoration: underline;
+        }
+
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .screenshot-grid img {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #00cc55;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover {
+            color: #00ff88;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #2a2a2a;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .content {
+                padding: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="lang-switch">
+        <button onclick="setLanguage('en')">English</button>
+        <button onclick="setLanguage('ru')">Русский</button>
+    </div>
+
+    <div class="header">
+        <h1>🧪 SodiumLight</h1>
+        <p data-translate="desc">Lightweight Fabric modpack built around Sodium + Iris</p>
+    </div>
+
+    <div class="content">
+        <h2 data-translate="features">⚡ Key Features</h2>
+        <ul>
+            <li data-translate="feature1">Sodium + Sodium Extra — ultimate OpenGL rendering</li>
+            <li data-translate="feature2">Iris Shaders — full shader support (Complementary, BSL, etc.)</li>
+            <li data-translate="feature3">Lithium, ModernFix, FerriteCore — logic and memory optimization</li>
+            <li data-translate="feature4">350+ FPS stable, full mod compatibility</li>
+        </ul>
+
+        <h2 data-translate="downloads">📦 Downloads</h2>
+        <table class="download-table">
+            <tr><th data-translate="version">Version</th><th>.mrpack</th><th>.zip (Prism)</th><th data-translate="changelog">Changelog</th></tr>
+            <tr><td>v1.0.0</td><td><a href="#">Download</a></td><td><a href="#">Download</a></td><td><a href="#">Full changelog</a></td></tr>
+        </table>
+
+        <h2 data-translate="screenshots">🖼️ Screenshots</h2>
+        <div class="screenshot-grid">
+            <img src="screenshots/sodium-fps.png" alt="SodiumLight FPS">
+            <img src="screenshots/sodium-shaders.png" alt="Shaders on">
+        </div>
+    </div>
+
+    <a href="../index.html" class="back-link" data-translate="back">← Back to Hub</a>
+    <div class="footer">
+        <p data-translate="footer">SodiumLight — just smooth Minecraft with shaders.</p>
+    </div>
+</div>
+
+<script>
+    const translations = {
+        en: {
+            desc: "Lightweight Fabric modpack built around Sodium + Iris",
+            features: "⚡ Key Features",
+            feature1: "Sodium + Sodium Extra — ultimate OpenGL rendering",
+            feature2: "Iris Shaders — full shader support (Complementary, BSL, etc.)",
+            feature3: "Lithium, ModernFix, FerriteCore — logic and memory optimization",
+            feature4: "350+ FPS stable, full mod compatibility",
+            downloads: "📦 Downloads",
+            version: "Version",
+            changelog: "Changelog",
+            screenshots: "🖼️ Screenshots",
+            back: "← Back to Hub",
+            footer: "SodiumLight — just smooth Minecraft with shaders."
+        },
+        ru: {
+            desc: "Лёгкая сборка на Fabric на базе Sodium + Iris",
+            features: "⚡ Ключевые особенности",
+            feature1: "Sodium + Sodium Extra — максимальная оптимизация OpenGL",
+            feature2: "Iris Shaders — полная поддержка шейдеров (Complementary, BSL и др.)",
+            feature3: "Lithium, ModernFix, FerriteCore — оптимизация логики и памяти",
+            feature4: "350+ стабильных FPS, полная совместимость с модами",
+            downloads: "📦 Загрузки",
+            version: "Версия",
+            changelog: "Изменения",
+            screenshots: "🖼️ Скриншоты",
+            back: "← Назад на главную",
+            footer: "SodiumLight — просто плавный Minecraft с шейдерами."
+        }
+    };
+
+    function getBrowserLanguage() {
+        return navigator.language.startsWith('ru') ? 'ru' : 'en';
+    }
+
+    function setLanguage(lang) {
+        localStorage.setItem('lightseries-lang', lang);
+        applyLanguage(lang);
+    }
+
+    function applyLanguage(lang) {
+        document.querySelectorAll('[data-translate]').forEach(el => {
+            const key = el.getAttribute('data-translate');
+            if (translations[lang] && translations[lang][key]) {
+                el.innerHTML = translations[lang][key];
+            }
+        });
+    }
+
+    let currentLang = localStorage.getItem('lightseries-lang');
+    if (!currentLang) currentLang = getBrowserLanguage();
+    applyLanguage(currentLang);
+</script>
+</body>
+</html>
