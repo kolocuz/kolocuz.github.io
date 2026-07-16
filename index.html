@@ -136,6 +136,45 @@
             image-rendering: pixelated; background-color: #111;
         }
 
+        .guide-btn {
+            background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.4); padding: 6px 12px; border-radius: 4px;
+            cursor: pointer; font-size: 10px; width: 100%; transition: all 0.2s;
+        }
+        .guide-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.15); }
+
+        .footer-link {
+            padding: 8px 14px 4px; border-top: 1px solid rgba(255,255,255,0.04);
+            text-align: center;
+        }
+        .footer-link a {
+            font-size: 10px; color: rgba(255,255,255,0.25); text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-link a:hover { color: rgba(255,255,255,0.5); }
+
+        #guide-modal {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        .guide-modal-content {
+            position: relative; max-width: 650px; width: 90vw; max-height: 85vh;
+            background: rgba(16,16,24,0.95); border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 20px; overflow-y: auto; color: #ccc; font-size: 13px; line-height: 1.7;
+        }
+        .guide-modal-close {
+            position: absolute; top: 10px; right: 10px;
+            width: 24px; height: 24px; border-radius: 4px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.4); font-size: 12px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .guide-modal-close:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+
         @media (max-width: 440px) {
             #toolbar-panel { width: calc(100vw - 20px); right: 6px; }
         }
@@ -172,10 +211,43 @@
                 <code id="css-code"></code>
             </div>
         </div>
+        <div class="section" style="text-align:center;">
+            <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
+        </div>
         <details class="section">
             <summary>Текстуры</summary>
             <div class="texture-grid" id="texture-grid"></div>
         </details>
+        <div class="footer-link">
+            <a href="https://github.com/kolocuz/kolocuz.github.io" target="_blank">github.com/kolocuz</a>
+        </div>
+    </div>
+
+    <div id="guide-modal">
+        <div class="guide-modal-content">
+            <button class="guide-modal-close" id="guide-close">✕</button>
+
+            <h3 style="color:rgba(255,255,255,0.8);margin-bottom:14px;font-size:16px;">Как добавить в OBS</h3>
+
+            <p><b>1.</b> Настройте шейдер под себя с помощью ползунков в панели.</p>
+
+            <p style="margin-top:10px;"><b>2.</b> В OBS добавьте источник <b>«Браузер»</b>.</p>
+
+            <p style="margin-top:10px;"><b>3.</b> В поле <b>URL</b> вставьте адрес сайта, как показано на скриншоте:</p>
+            <code style="background:rgba(255,255,255,0.06);padding:3px 8px;border-radius:4px;font-size:12px;">https://kolocuz.github.io</code>
+            <img src="assets/guide-url.png" alt="Поле URL в OBS" style="
+                width:100%; border-radius:6px; display:block; margin-top:8px;
+            ">
+
+            <p style="margin-top:14px;"><b>4.</b> Скопируйте <b>CSS для OBS</b> из панели настроек и вставьте в поле <b>«CSS»</b>, как на скриншоте:</p>
+            <img src="assets/guide-css.png" alt="Поле CSS в OBS" style="
+                width:100%; border-radius:6px; display:block; margin-top:8px;
+            ">
+
+            <p style="margin-top:14px;color:rgba(255,255,255,0.4);font-size:11px;">
+                <b>💡 Совет:</b> В OBS можно изменить ширину и высоту источника. Если шейдер лагает — уменьшите разрешение и растяните. Если качество низкое — увеличьте или поставьте нативное разрешение экрана.
+            </p>
+        </div>
     </div>
 
     <script id="vs" type="x-shader/x-vertex">
@@ -563,6 +635,35 @@
                     btn.classList.remove('copied');
                 }, 2000);
             });
+        });
+
+        var guideBtn = document.getElementById('guide-btn');
+        var guideModal = document.getElementById('guide-modal');
+        var guideClose = document.getElementById('guide-close');
+
+        guideBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            guideModal.style.opacity = '1';
+            guideModal.style.visibility = 'visible';
+        });
+
+        guideClose.addEventListener('click', function() {
+            guideModal.style.opacity = '0';
+            guideModal.style.visibility = 'hidden';
+        });
+
+        guideModal.addEventListener('click', function(e) {
+            if (e.target === guideModal) {
+                guideModal.style.opacity = '0';
+                guideModal.style.visibility = 'hidden';
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && guideModal.style.visibility === 'visible') {
+                guideModal.style.opacity = '0';
+                guideModal.style.visibility = 'hidden';
+            }
         });
 
         updateCssOutput();
