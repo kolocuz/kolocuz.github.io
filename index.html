@@ -6,7 +6,7 @@
     <title>Minecraft Shader</title>
     <style>
         :root {
-            --speed: 2.0; --fov: 1.2; --max-steps: 60; --stone-threshold: 0.94;
+            --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-threshold: 0.94;
             --ore-blend-min: 0.6; --ore-blend-max: 0.4; --roughness-scale: 0.25;
             --crack-chance: 0.15; --hole-depth: -0.35; --fog-density: 0.001;
             --vignette-strength: 0.1; --brightness-mult: 1.5; --tunnel-radius: 1.5;
@@ -14,6 +14,19 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
         canvas { display:block; position:fixed; top:0; left:0; z-index:0; }
+
+        #watermark {
+            position: fixed; bottom: 16px; left: 16px; z-index: 50;
+            color: rgba(255,255,255,0.3); font-size: 12px;
+            font-family: system-ui, sans-serif; pointer-events: auto;
+            transition: opacity 0.3s; user-select: none;
+        }
+        #watermark a {
+            color: rgba(255,255,255,0.3); text-decoration: none;
+            transition: color 0.3s;
+        }
+        #watermark a:hover { color: rgba(255,255,255,0.7); }
+        #watermark.hidden { opacity: 0; }
 
         #toolbar-toggle {
             position: fixed; top: 20px; right: 20px; z-index: 100;
@@ -84,6 +97,27 @@
         }
         .slider-group input[type="range"] { width: 100%; accent-color: #4ecdc4; }
 
+        .toggle-group {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 11px; color: #aaa; margin-bottom: 6px;
+        }
+        .toggle-group input[type="checkbox"] {
+            width: 36px; height: 20px; appearance: none;
+            background: #444; border-radius: 10px; position: relative;
+            cursor: pointer; transition: background 0.3s;
+        }
+        .toggle-group input[type="checkbox"]::before {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 16px; height: 16px; background: #fff;
+            border-radius: 50%; transition: transform 0.3s;
+        }
+        .toggle-group input[type="checkbox"]:checked {
+            background: #4ecdc4;
+        }
+        .toggle-group input[type="checkbox"]:checked::before {
+            transform: translateX(16px);
+        }
+
         .btn-reset {
             background: transparent; color: #aaa; border: 1px solid #444;
             padding: 4px 10px; border-radius: 5px; cursor: pointer;
@@ -127,6 +161,8 @@
 <body>
     <canvas id="c"></canvas>
 
+    <div id="watermark"><a href="https://kolocuz.github.io" target="_blank">kolocuz.github.io</a></div>
+
     <button id="toolbar-toggle" title="Настройки шейдера">⚙</button>
     <div id="toolbar-panel">
         <div class="panel-header">
@@ -139,6 +175,10 @@
                 <button class="btn-reset" id="reset-btn">↺ Сброс</button>
             </div>
             <div id="sliders"></div>
+            <div class="toggle-group">
+                <span>Вотермарка</span>
+                <input type="checkbox" id="watermark-toggle" checked>
+            </div>
         </div>
         <div class="section">
             <div class="css-output-header">
@@ -356,7 +396,7 @@
                 gl.uniform2f(uRes, canvas.width, canvas.height);
                 gl.uniform1f(NU.u_speed, cssNum('--speed',2));
                 gl.uniform1f(NU.u_fov, cssNum('--fov',1.2));
-                gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps',60));
+                gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps',100));
                 gl.uniform1f(NU.u_stoneThreshold, cssNum('--stone-threshold',0.94));
                 gl.uniform1f(NU.u_oreBlendMin, cssNum('--ore-blend-min',0.6));
                 gl.uniform1f(NU.u_oreBlendMax, cssNum('--ore-blend-max',0.4));
@@ -375,21 +415,21 @@
 
         init();
 
-        var cssVars = [
-            ['--speed','Скорость',0.1,10,0.1,2.0],
-            ['--fov','FOV',0.5,3,0.1,1.2],
-            ['--max-steps','Шаги',10,200,1,60],
-            ['--stone-threshold','Порог камня',0.5,1,0.01,0.94],
-            ['--ore-blend-min','Смешивание min',0,1,0.01,0.6],
-            ['--ore-blend-max','Смешивание max',0,1,0.01,0.4],
-            ['--roughness-scale','Шероховатость',0,0.5,0.01,0.25],
-            ['--crack-chance','Шанс трещин',0,0.5,0.01,0.15],
-            ['--hole-depth','Глубина дыр',-1,0,0.01,-0.35],
-            ['--fog-density','Туман',0,0.01,0.0001,0.001],
-            ['--vignette-strength','Виньетка',0,0.5,0.01,0.1],
-            ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
-            ['--tunnel-radius','Радиус',2,3,0.1,1.5],
-        ];
+var cssVars = [
+    ['--speed','Скорость полёта',0.1,10,0.1,2.0],
+    ['--fov','Угол обзора',0.5,3,0.1,1.2],
+    ['--max-steps','Дальность прорисовки',10,200,1,100],
+    ['--stone-threshold','Количество руды',0.5,1,0.01,0.94],
+    ['--ore-blend-min','Плотность руды',0,1,0.01,0.6],
+    ['--ore-blend-max','Контраст руды',0,1,0.01,0.4],
+    ['--roughness-scale','Рельеф стен',0,0.5,0.01,0.25],
+    ['--crack-chance','Частота трещин',0,0.5,0.01,0.15],
+    ['--hole-depth','Глубина трещин',-1,0,0.01,-0.35],
+    ['--fog-density','Плотность тумана',0,0.01,0.0001,0.001],
+    ['--vignette-strength','Затемнение краёв',0,0.5,0.01,0.1],
+    ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
+    ['--tunnel-radius','Ширина тоннеля',2,3,0.1,1.5],
+];
         var texLabels = ['Камень','Уголь','Железо','Лазурит','Золото','Редстоун','Алмаз','Изумруд'];
         var texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
 
@@ -426,12 +466,24 @@
                 var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
+            document.getElementById('watermark-toggle').checked = true;
+            document.getElementById('watermark').classList.remove('hidden');
             updateCssOutput();
         });
 
         var toggleBtn = document.getElementById('toolbar-toggle');
         var panelEl = document.getElementById('toolbar-panel');
         var closeBtn = document.getElementById('toolbar-close');
+        var watermark = document.getElementById('watermark');
+        var watermarkToggle = document.getElementById('watermark-toggle');
+
+        watermarkToggle.addEventListener('change', function() {
+            if (this.checked) {
+                watermark.classList.remove('hidden');
+            } else {
+                watermark.classList.add('hidden');
+            }
+        });
 
         var hideTimeout;
         var HIDE_DELAY = 5000;
@@ -509,6 +561,9 @@
                 css += '  ' + v[0] + ': ' + val + ';\n';
             });
             css += '}\n#toolbar-toggle, #toolbar-panel { display: none !important; }';
+            if (!watermarkToggle.checked) {
+                css += '\n#watermark { display: none !important; }';
+            }
             document.getElementById('css-code').textContent = css;
         }
 
