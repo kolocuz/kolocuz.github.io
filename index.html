@@ -376,4 +376,44 @@ function loadTexture(url) {
             }, 5000);
         }
 
-     
+        trigger.addEventListener('mouseenter', function() { isHoveringTrigger=true; hint.classList.add('visible'); clearTimeout(hideTimeout); });
+        trigger.addEventListener('mouseleave', function() { isHoveringTrigger=false; scheduleHide(); });
+        trigger.addEventListener('click', openPanel);
+        panel.addEventListener('mouseenter', function() { isHoveringPanel=true; clearTimeout(hideTimeout); });
+        panel.addEventListener('mouseleave', function() { isHoveringPanel=false; scheduleHide(); });
+        overlay.addEventListener('click', closePanel);
+        document.getElementById('close-btn').addEventListener('click', closePanel);
+        document.getElementById('reset-btn').addEventListener('click', function() {
+            cssVars.forEach(function(v) {
+                document.documentElement.style.setProperty(v[0], v[5]);
+                var s = document.querySelector('[data-css="'+v[0]+'"]');
+                if (s) s.value = v[5];
+                var valEl = document.getElementById('val'+v[0]);
+                if (valEl) valEl.textContent = v[5];
+            });
+            updateCssOutput();
+        });
+
+        document.addEventListener('keydown', function(e) { if (e.key==='Escape' && isOpen) closePanel(); });
+
+        function updateCssOutput() {
+            var lines = [':root {'];
+            cssVars.forEach(function(v) {
+                var val = getComputedStyle(document.documentElement).getPropertyValue(v[0]).trim();
+                lines.push('    '+v[0]+': '+val+';');
+            });
+            lines.push('}');
+            document.getElementById('css-code').textContent = lines.join('\n');
+        }
+
+        document.getElementById('copy-css-btn').addEventListener('click', function() {
+            var code = document.getElementById('css-code').textContent;
+            navigator.clipboard.writeText(code).then(function() {
+                var btn = document.getElementById('copy-css-btn');
+                btn.textContent = '✓ Скопировано!'; btn.classList.add('copied');
+                setTimeout(function() { btn.textContent = '📋 Копировать'; btn.classList.remove('copied'); }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
