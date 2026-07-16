@@ -1,1 +1,379 @@
-index.html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Shader</title>
+    <style>
+        :root {
+            --speed: 2.0; --fov: 1.2; --max-steps: 60; --stone-threshold: 0.94;
+            --ore-blend-min: 0.6; --ore-blend-max: 0.4; --roughness-scale: 0.25;
+            --crack-chance: 0.15; --hole-depth: -0.35; --fog-density: 0.001;
+            --vignette-strength: 0.1; --brightness-mult: 1.5; --tunnel-radius: 1.5;
+            --bg-color: #000;
+            --panel-bg: rgba(22,22,40,0.95); --panel-text: #eee;
+            --accent: #4ecdc4; --accent2: #ff6b6b; --border: rgba(15,52,96,0.8);
+            --panel-width: 400px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
+        canvas { display:block; position:fixed; top:0; left:0; z-index:0; }
+        #panel-trigger { position:fixed; left:0; top:0; width:8px; height:100vh; z-index:90; }
+        #panel-hint { position:fixed; left:4px; top:50%; transform:translateY(-50%); z-index:95; pointer-events:none; opacity:0; transition:opacity 0.4s; }
+        #panel-hint.visible { opacity:1; }
+        .hint-arrow { width:28px; height:28px; background:rgba(78,205,196,0.3); border:2px solid rgba(78,205,196,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); animation:pulse 2s ease-in-out infinite; }
+        .hint-arrow svg { width:14px; height:14px; fill:none; stroke:#4ecdc4; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; margin-left:1px; }
+        @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(78,205,196,0.3); transform:translateX(0); } 50% { box-shadow:0 0 16px 4px rgba(78,205,196,0.15); transform:translateX(4px); } }
+        #panel { position:fixed; left:0; top:0; width:var(--panel-width); height:100vh; background:var(--panel-bg); color:var(--panel-text); z-index:100; display:flex; flex-direction:column; box-shadow:4px 0 30px rgba(0,0,0,0.6); transform:translateX(calc(-1*var(--panel-width))); transition:transform 0.35s cubic-bezier(0.4,0,0.2,1); overflow-y:auto; overflow-x:hidden; backdrop-filter:blur(12px); }
+        #panel.open { transform:translateX(0); }
+        #panel-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:99; opacity:0; pointer-events:none; transition:opacity 0.35s; }
+        #panel-overlay.active { opacity:1; pointer-events:auto; }
+        .panel-header { padding:14px 18px; background:rgba(15,52,96,0.6); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+        .panel-header h2 { margin:0; font-size:17px; color:var(--accent); display:flex; align-items:center; gap:8px; }
+        .btn-reset { background:transparent; color:#aaa; border:1px solid #444; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:11px; }
+        .btn-close { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); padding:5px 10px; border-radius:5px; cursor:pointer; font-size:11px; }
+        .section { padding:12px 18px; border-bottom:1px solid rgba(255,255,255,0.04); }
+        .section-title { font-size:12px; font-weight:700; color:var(--accent); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+        .slider-group { margin-bottom:8px; }
+        .slider-group label { display:flex; justify-content:space-between; font-size:11px; color:#999; margin-bottom:4px; }
+        .slider-group .val { color:var(--accent); font-weight:700; background:rgba(78,205,196,0.1); padding:2px 7px; border-radius:8px; }
+        .slider-group input[type="range"] { width:100%; accent-color:var(--accent); }
+        .texture-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+        .texture-item { aspect-ratio:1; border:2px solid rgba(255,255,255,0.08); border-radius:6px; cursor:pointer; background-size:cover; background-position:center; image-rendering:pixelated; background-color:#111; position:relative; }
+        .texture-item:hover { border-color:var(--accent); }
+        .texture-item .name { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); color:#fff; font-size:9px; text-align:center; padding:3px 2px; }
+        .css-output { background:rgba(0,0,0,0.5); color:#7af57a; padding:14px; border-radius:6px; font-family:monospace; font-size:10px; max-height:160px; overflow-y:auto; white-space:pre-wrap; position:relative; }
+        .copy-btn { position:absolute; top:6px; right:6px; background:var(--accent); color:#000; border:none; padding:5px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700; }
+        .copy-btn.copied { background:#4caf50; color:#fff; }
+        #panel::-webkit-scrollbar { width:4px; }
+        #panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+        @media (max-width:440px) { #panel { width:100vw; transform:translateX(-100vw); } }
+    </style>
+</head>
+<body>
+    <canvas id="c"></canvas>
+
+    <div id="panel-trigger"></div>
+    <div id="panel-hint"><div class="hint-arrow"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div></div>
+    <div id="panel-overlay"></div>
+    
+    <div id="panel">
+        <div class="panel-header">
+            <h2>⬡ Шейдер</h2>
+            <div style="display:flex;gap:6px;">
+                <button class="btn-reset" id="reset-btn">↺ Сброс</button>
+                <button class="btn-close" id="close-btn">✕</button>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-title">⚙ Параметры</div>
+            <div id="sliders"></div>
+        </div>
+        <div class="section">
+            <div class="section-title">🖼 Текстуры</div>
+            <div class="texture-grid" id="texture-grid"></div>
+        </div>
+        <div class="section">
+            <div class="section-title">📋 CSS для OBS</div>
+            <div class="css-output" id="css-output">
+                <button class="copy-btn" id="copy-css-btn">📋 Копировать</button>
+                <code id="css-code"></code>
+            </div>
+        </div>
+    </div>
+
+    <script id="vs" type="x-shader/x-vertex">
+        attribute vec2 position;
+        void main() { gl_Position = vec4(position, 0.0, 1.0); }
+    </script>
+
+    <script id="fs" type="x-shader/x-fragment">
+        precision highp float;
+        uniform float time;
+        uniform vec2 resolution;
+        uniform float u_speed;
+        uniform float u_fov;
+        uniform float u_maxSteps;
+        uniform float u_stoneThreshold;
+        uniform float u_oreBlendMin;
+        uniform float u_oreBlendMax;
+        uniform float u_roughnessScale;
+        uniform float u_crackChance;
+        uniform float u_holeDepth;
+        uniform float u_fogDensity;
+        uniform float u_vignetteStrength;
+        uniform float u_brightnessMult;
+        uniform float u_tunnelRadius;
+        uniform sampler2D stone;
+        uniform sampler2D coal_ore;
+        uniform sampler2D iron_ore;
+        uniform sampler2D lapis_ore;
+        uniform sampler2D gold_ore;
+        uniform sampler2D redstone_ore;
+        uniform sampler2D diamond_ore;
+        uniform sampler2D emerald_ore;
+
+        float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+
+        float noise(vec3 p) {
+            vec3 i = floor(p); vec3 f = fract(p); f = f*f*(3.0-2.0*f);
+            float a=hash(i), b=hash(i+vec3(1,0,0)), c=hash(i+vec3(0,1,0)), d=hash(i+vec3(0,0,1));
+            float e=hash(i+vec3(1,1,0)), g=hash(i+vec3(1,0,1)), h=hash(i+vec3(0,1,1)), j=hash(i+vec3(1,1,1));
+            return mix(mix(mix(a,b,f.x),mix(c,d,f.x),f.y),mix(mix(e,g,f.x),mix(h,j,f.x),f.y),f.z);
+        }
+
+        vec4 getTex(vec2 uv, int t) {
+            if(t<0) return texture2D(stone,uv);
+            if(t==0) return texture2D(coal_ore,uv);
+            if(t==1) return texture2D(iron_ore,uv);
+            if(t==2) return texture2D(lapis_ore,uv);
+            if(t==3) return texture2D(gold_ore,uv);
+            if(t==4) return texture2D(redstone_ore,uv);
+            if(t==5) return texture2D(diamond_ore,uv);
+            if(t==6) return texture2D(emerald_ore,uv);
+            return vec4(1,0,1,1);
+        }
+
+        vec3 getBlock(vec3 id, vec2 uv) {
+            float h=hash(id);
+            if(h<u_stoneThreshold) return getTex(uv,-1).rgb;
+            float r=hash(id+vec3(5,7,11));
+            int o=0;
+            if(r<0.45) o=0; else if(r<0.70) o=1; else if(r<0.80) o=2; else if(r<0.87) o=3; else if(r<0.94) o=4; else if(r<0.98) o=5; else o=6;
+            float bl=hash(id+vec3(13,17,19));
+            return mix(getTex(uv,-1).rgb,getTex(uv,o).rgb,u_oreBlendMin+bl*u_oreBlendMax);
+        }
+
+        vec3 P1(float z) { return vec3(sin(z*0.2)*3.0,cos(z*0.3)*2.0,z); }
+        vec3 P2(float z) { return vec3(sin(z*0.2),cos(z*0.3)*4.0-1.0,z); }
+        vec3 P3(float z) { return vec3(sin(z*0.3)*3.0,cos(z*0.2)*1.0-1.0,z); }
+
+        float map(vec3 p) {
+            float d1=length(p-P1(p.z)), d2=length(p-P2(p.z)), d3=length(p-P3(p.z));
+            float bd=u_tunnelRadius-min(d1,min(d2,d3));
+            if(bd>2.0) return bd;
+            float zPos=p.z*0.5;
+            float sd=bd*(1.0+sin(zPos)*0.005+cos(zPos*0.7)*0.0025);
+            float sm=smoothstep(0.0,0.4,abs(bd));
+            sd+=noise(p*6.0)*u_roughnessScale*sm;
+            sd+=u_holeDepth*step(noise(p*1.5),u_crackChance)*sm;
+            return sd;
+        }
+
+        void main() {
+            vec2 uv=(gl_FragCoord.xy-resolution.xy*0.5)/resolution.y;
+            float t=time*u_speed;
+            vec3 ro=P1(t), fw=normalize(P1(t+1.0)-ro), rt=normalize(vec3(fw.z,0,-fw.x)), up=cross(fw,rt);
+            vec3 rd=normalize(fw+(uv.x*rt+uv.y*up)/u_fov);
+            float res=0.5;
+            vec3 p=floor(ro/res);
+            vec3 cubo=(sign(rd)*((p-ro/res)+0.5)+0.5)/abs(rd);
+            float d=0.0; vec3 mask; int i=0;
+            for(int j=0; j<200; j++) {
+                if(i>=int(u_maxSteps) || map(p*res)<=0.0) break;
+                mask=step(cubo,cubo.yzx)*step(cubo,cubo.zxy);
+                p+=sign(rd)*mask; d=dot(cubo,mask); cubo+=mask/abs(rd);
+                i++;
+            }
+            vec3 col=vec3(0);
+            if(i<int(u_maxSteps)) {
+                vec3 hit=fract(ro/res+d*rd)-0.5;
+                vec2 tc; float fu=0.0,fv=0.0;
+                if(abs(mask.x)>0.5) { tc=vec2(hit.z,hit.y); if(mask.x<0.0) fu=1.0; }
+                else if(abs(mask.y)>0.5) { tc=vec2(hit.x,hit.z); if(mask.y<0.0) fv=1.0; }
+                else { tc=vec2(hit.x,hit.y); if(mask.z<0.0) fu=1.0; }
+                tc.x=mix(tc.x,1.0-tc.x,fu); tc.y=mix(tc.y,1.0-tc.y,fv); tc+=0.5;
+                col=getBlock(p,tc)*u_brightnessMult/d;
+            }
+            col=mix(col,vec3(0.05,0.05,0.08),1.0-exp(-u_fogDensity*d*d));
+            col*=1.0-length(uv)*u_vignetteStrength;
+            gl_FragColor=vec4(sqrt(clamp(col,0.0,1.0)),1.0);
+        }
+    </script>
+
+    <script>
+        // === WebGL ===
+        const canvas = document.getElementById('c');
+        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+        if (!gl) alert('WebGL не поддерживается');
+
+        function cssNum(name, fallback) {
+            const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+            return val ? parseFloat(val) : fallback;
+        }
+
+function loadTexture(url) {
+    return new Promise(function(resolve) {
+        var img = new Image();
+        img.onload = function() {
+            // Создаём canvas, чтобы перевернуть изображение
+            var cn = document.createElement('canvas');
+            cn.width = img.width;
+            cn.height = img.height;
+            var cx = cn.getContext('2d');
+            // Отражаем по вертикали
+            cx.translate(0, img.height);
+            cx.scale(1, -1);
+            cx.drawImage(img, 0, 0);
+            
+            var tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cn);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            resolve(tex);
+        };
+        img.onerror = function() { resolve(null); };
+        img.src = url;
+    });
+}
+        async function init() {
+            var vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, document.getElementById('vs').textContent);
+            gl.compileShader(vs);
+
+            var fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, document.getElementById('fs').textContent);
+            gl.compileShader(fs);
+
+            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+                document.body.innerHTML = '<pre style="color:red;padding:20px;">' + gl.getShaderInfoLog(fs) + '</pre>';
+                return;
+            }
+
+            var program = gl.createProgram();
+            gl.attachShader(program, vs); gl.attachShader(program, fs);
+            gl.linkProgram(program); gl.useProgram(program);
+
+            var buf = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+            var pos = gl.getAttribLocation(program, 'position');
+            gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+
+            var NU = {};
+            ['u_speed','u_fov','u_maxSteps','u_stoneThreshold','u_oreBlendMin','u_oreBlendMax',
+             'u_roughnessScale','u_crackChance','u_holeDepth','u_fogDensity','u_vignetteStrength',
+             'u_brightnessMult','u_tunnelRadius'].forEach(function(n) {
+                NU[n] = gl.getUniformLocation(program, n);
+            });
+            var uTime = gl.getUniformLocation(program, 'time');
+            var uRes = gl.getUniformLocation(program, 'resolution');
+
+            var texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
+            
+            for (var i = 0; i < texNames.length; i++) {
+                var loc = gl.getUniformLocation(program, texNames[i]);
+                if (loc) gl.uniform1i(loc, i);
+                gl.activeTexture(gl.TEXTURE0 + i);
+                await loadTexture('assets/' + texNames[i] + '.png');
+            }
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+            window.addEventListener('resize', resize); resize();
+
+            var start = performance.now();
+            function render(ts) {
+                gl.uniform1f(uTime, (ts-start)*0.001);
+                gl.uniform2f(uRes, canvas.width, canvas.height);
+                gl.uniform1f(NU.u_speed, cssNum('--speed',2));
+                gl.uniform1f(NU.u_fov, cssNum('--fov',1.2));
+                gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps',60));
+                gl.uniform1f(NU.u_stoneThreshold, cssNum('--stone-threshold',0.94));
+                gl.uniform1f(NU.u_oreBlendMin, cssNum('--ore-blend-min',0.6));
+                gl.uniform1f(NU.u_oreBlendMax, cssNum('--ore-blend-max',0.4));
+                gl.uniform1f(NU.u_roughnessScale, cssNum('--roughness-scale',0.25));
+                gl.uniform1f(NU.u_crackChance, cssNum('--crack-chance',0.15));
+                gl.uniform1f(NU.u_holeDepth, cssNum('--hole-depth',-0.35));
+                gl.uniform1f(NU.u_fogDensity, cssNum('--fog-density',0.001));
+                gl.uniform1f(NU.u_vignetteStrength, cssNum('--vignette-strength',0.1));
+                gl.uniform1f(NU.u_brightnessMult, cssNum('--brightness-mult',1.5));
+                gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius',1.5));
+                gl.drawArrays(gl.TRIANGLES, 0, 3);
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        }
+
+        init();
+
+        // === UI Панель ===
+        var cssVars = [
+            ['--speed','Скорость',0.1,10,0.1,2.0],
+            ['--fov','FOV',0.5,3,0.1,1.2],
+            ['--max-steps','Шаги',10,200,1,60],
+            ['--stone-threshold','Порог камня',0.5,1,0.01,0.94],
+            ['--ore-blend-min','Смешивание min',0,1,0.01,0.6],
+            ['--ore-blend-max','Смешивание max',0,1,0.01,0.4],
+            ['--roughness-scale','Шероховатость',0,0.5,0.01,0.25],
+            ['--crack-chance','Шанс трещин',0,0.5,0.01,0.15],
+            ['--hole-depth','Глубина дыр',-1,0,0.01,-0.35],
+            ['--fog-density','Туман',0,0.01,0.0001,0.001],
+            ['--vignette-strength','Виньетка',0,0.5,0.01,0.1],
+            ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
+            ['--tunnel-radius','Радиус',0.5,4,0.1,1.5],
+        ];
+        var texLabels = ['Камень','Уголь','Железо','Лазурит','Золото','Редстоун','Алмаз','Изумруд'];
+        var texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
+
+        // Слайдеры
+        var slidersDiv = document.getElementById('sliders');
+        cssVars.forEach(function(v) {
+            var g = document.createElement('div'); g.className = 'slider-group';
+            g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
+            slidersDiv.appendChild(g);
+        });
+
+        // Превью текстур
+        var texGrid = document.getElementById('texture-grid');
+        texNames.forEach(function(name, i) {
+            var item = document.createElement('div'); item.className = 'texture-item';
+            item.style.backgroundImage = 'url(assets/'+name+'.png)';
+            item.innerHTML = '<span class="name">'+texLabels[i]+'</span>';
+            texGrid.appendChild(item);
+        });
+
+        // События слайдеров
+        document.querySelectorAll('input[type="range"]').forEach(function(s) {
+            s.addEventListener('input', function() {
+                var v = parseFloat(s.value);
+                document.documentElement.style.setProperty(s.dataset.css, v);
+                var valEl = document.getElementById('val'+s.dataset.css);
+                if (valEl) valEl.textContent = v;
+                updateCssOutput();
+            });
+        });
+
+        // Панель
+        var panel = document.getElementById('panel');
+        var overlay = document.getElementById('panel-overlay');
+        var hint = document.getElementById('panel-hint');
+        var trigger = document.getElementById('panel-trigger');
+        var isOpen = false, isHoveringPanel = false, isHoveringTrigger = false, hideTimeout;
+
+        function openPanel() {
+            panel.classList.add('open'); overlay.classList.add('active');
+            hint.classList.remove('visible'); isOpen = true;
+            clearTimeout(hideTimeout); updateCssOutput();
+        }
+        function closePanel() {
+            panel.classList.remove('open'); overlay.classList.remove('active');
+            isOpen = false; clearTimeout(hideTimeout);
+            if (isHoveringTrigger) hint.classList.add('visible');
+        }
+        function scheduleHide() {
+            if (!isOpen) return;
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(function() {
+                if (!isHoveringPanel && !isHoveringTrigger) closePanel();
+            }, 5000);
+        }
+
+     
