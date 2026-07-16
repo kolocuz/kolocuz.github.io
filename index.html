@@ -10,76 +10,149 @@
             --ore-blend-min: 0.6; --ore-blend-max: 0.4; --roughness-scale: 0.25;
             --crack-chance: 0.15; --hole-depth: -0.35; --fog-density: 0.001;
             --vignette-strength: 0.1; --brightness-mult: 1.5; --tunnel-radius: 1.5;
-            --bg-color: #000;
-            --panel-bg: rgba(22,22,40,0.95); --panel-text: #eee;
-            --accent: #4ecdc4; --accent2: #ff6b6b; --border: rgba(15,52,96,0.8);
-            --panel-width: 400px;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
         canvas { display:block; position:fixed; top:0; left:0; z-index:0; }
-        #panel-trigger { position:fixed; left:0; top:0; width:8px; height:100vh; z-index:90; }
-        #panel-hint { position:fixed; left:4px; top:50%; transform:translateY(-50%); z-index:95; pointer-events:none; opacity:0; transition:opacity 0.4s; }
-        #panel-hint.visible { opacity:1; }
-        .hint-arrow { width:28px; height:28px; background:rgba(78,205,196,0.3); border:2px solid rgba(78,205,196,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); animation:pulse 2s ease-in-out infinite; }
-        .hint-arrow svg { width:14px; height:14px; fill:none; stroke:#4ecdc4; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; margin-left:1px; }
-        @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(78,205,196,0.3); transform:translateX(0); } 50% { box-shadow:0 0 16px 4px rgba(78,205,196,0.15); transform:translateX(4px); } }
-        #panel { position:fixed; left:0; top:0; width:var(--panel-width); height:100vh; background:var(--panel-bg); color:var(--panel-text); z-index:100; display:flex; flex-direction:column; box-shadow:4px 0 30px rgba(0,0,0,0.6); transform:translateX(calc(-1*var(--panel-width))); transition:transform 0.35s cubic-bezier(0.4,0,0.2,1); overflow-y:auto; overflow-x:hidden; backdrop-filter:blur(12px); }
-        #panel.open { transform:translateX(0); }
-        #panel-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:99; opacity:0; pointer-events:none; transition:opacity 0.35s; }
-        #panel-overlay.active { opacity:1; pointer-events:auto; }
-        .panel-header { padding:14px 18px; background:rgba(15,52,96,0.6); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
-        .panel-header h2 { margin:0; font-size:17px; color:var(--accent); display:flex; align-items:center; gap:8px; }
-        .btn-reset { background:transparent; color:#aaa; border:1px solid #444; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:11px; }
-        .btn-close { background:rgba(255,107,107,0.15); color:var(--accent2); border:1px solid rgba(255,107,107,0.3); padding:5px 10px; border-radius:5px; cursor:pointer; font-size:11px; }
-        .section { padding:12px 18px; border-bottom:1px solid rgba(255,255,255,0.04); }
-        .section-title { font-size:12px; font-weight:700; color:var(--accent); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
-        .slider-group { margin-bottom:8px; }
-        .slider-group label { display:flex; justify-content:space-between; font-size:11px; color:#999; margin-bottom:4px; }
-        .slider-group .val { color:var(--accent); font-weight:700; background:rgba(78,205,196,0.1); padding:2px 7px; border-radius:8px; }
-        .slider-group input[type="range"] { width:100%; accent-color:var(--accent); }
-        .texture-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
-        .texture-item { aspect-ratio:1; border:2px solid rgba(255,255,255,0.08); border-radius:6px; cursor:pointer; background-size:cover; background-position:center; image-rendering:pixelated; background-color:#111; position:relative; }
-        .texture-item:hover { border-color:var(--accent); }
-        .texture-item .name { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.7); color:#fff; font-size:9px; text-align:center; padding:3px 2px; }
-        .css-output { background:rgba(0,0,0,0.5); color:#7af57a; padding:14px; border-radius:6px; font-family:monospace; font-size:10px; max-height:160px; overflow-y:auto; white-space:pre-wrap; position:relative; }
-        .copy-btn { position:absolute; top:6px; right:6px; background:var(--accent); color:#000; border:none; padding:5px 10px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700; }
-        .copy-btn.copied { background:#4caf50; color:#fff; }
-        #panel::-webkit-scrollbar { width:4px; }
-        #panel::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
-        @media (max-width:440px) { #panel { width:100vw; transform:translateX(-100vw); } }
+
+        #toolbar-toggle {
+            position: fixed; top: 20px; right: 20px; z-index: 100;
+            width: 44px; height: 44px; border-radius: 10px;
+            background: rgba(20,20,30,0.7); backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.1); color: #ccc;
+            font-size: 20px; display: flex; align-items: center;
+            justify-content: center; cursor: pointer;
+            transition: opacity 0.4s, background 0.2s, color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); user-select: none;
+            opacity: 1;
+        }
+        #toolbar-toggle.hidden { opacity: 0; pointer-events: none; }
+        #toolbar-toggle:hover {
+            background: rgba(40,40,55,0.8); color: #fff;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+        }
+
+        #toolbar-panel {
+            position: fixed; top: 80px; right: 20px; z-index: 101;
+            width: 280px; max-height: calc(100vh - 100px);
+            background: rgba(16,16,24,0.92); backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            display: flex; flex-direction: column; overflow-y: auto;
+            opacity: 0; visibility: hidden; transform: translateY(-10px);
+            transition: opacity 0.25s, visibility 0.25s, transform 0.25s;
+            color: #ddd; font-size: 13px; padding: 8px 0;
+        }
+        #toolbar-panel.open { opacity: 1; visibility: visible; transform: translateY(0); }
+        #toolbar-panel::-webkit-scrollbar { width: 4px; }
+        #toolbar-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-weight: 600; color: #fff; font-size: 15px;
+        }
+        .panel-header button {
+            background: none; border: none; color: #aaa; font-size: 18px;
+            cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1;
+        }
+        .panel-header button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .section { padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .section:last-of-type { border-bottom: none; }
+        .section-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: #4ecdc4; margin-bottom: 8px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        details.section { padding: 8px 16px; }
+        details summary {
+            cursor: pointer; outline: none; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px; color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        details summary:hover { color: #fff; }
+
+        .slider-group { margin-bottom: 6px; }
+        .slider-group label {
+            display: flex; justify-content: space-between; font-size: 11px;
+            color: #aaa; margin-bottom: 4px;
+        }
+        .slider-group .val {
+            font-size: 10px; color: #4ecdc4; font-weight: 700;
+            background: rgba(78,205,196,0.15); padding: 1px 6px; border-radius: 6px;
+        }
+        .slider-group input[type="range"] { width: 100%; accent-color: #4ecdc4; }
+
+        .btn-reset {
+            background: transparent; color: #aaa; border: 1px solid #444;
+            padding: 4px 10px; border-radius: 5px; cursor: pointer;
+            font-size: 10px; transition: all 0.2s;
+        }
+        .btn-reset:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: #666; }
+
+        .texture-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .texture-item {
+            aspect-ratio: 1; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px; background-size: cover; background-position: center;
+            image-rendering: pixelated; background-color: #111; position: relative;
+        }
+        .texture-item .name {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.7); color: #fff; font-size: 9px;
+            text-align: center; padding: 3px 2px; border-radius: 0 0 4px 4px;
+        }
+
+        .css-output {
+            background: rgba(0,0,0,0.5); color: #7af57a; padding: 8px;
+            border-radius: 6px; font-family: monospace; font-size: 9px;
+            max-height: 140px; overflow-y: auto; white-space: pre-wrap;
+        }
+        .css-output-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .copy-btn {
+            background: #4ecdc4; color: #000; border: none;
+            padding: 3px 8px; border-radius: 4px; font-size: 10px;
+            cursor: pointer; font-weight: 700; transition: background 0.2s;
+        }
+        .copy-btn.copied { background: #4caf50; color: #fff; }
+
+        @media (max-width: 440px) {
+            #toolbar-panel { width: calc(100vw - 20px); right: 10px; }
+        }
     </style>
 </head>
 <body>
     <canvas id="c"></canvas>
 
-    <div id="panel-trigger"></div>
-    <div id="panel-hint"><div class="hint-arrow"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div></div>
-    <div id="panel-overlay"></div>
-    
-    <div id="panel">
+    <button id="toolbar-toggle" title="Настройки шейдера">⚙</button>
+    <div id="toolbar-panel">
         <div class="panel-header">
-            <h2>⬡ Шейдер</h2>
-            <div style="display:flex;gap:6px;">
-                <button class="btn-reset" id="reset-btn">↺ Сброс</button>
-                <button class="btn-close" id="close-btn">✕</button>
-            </div>
+            <span>⬡ Шейдер</span>
+            <button id="toolbar-close" title="Закрыть">✕</button>
         </div>
         <div class="section">
-            <div class="section-title">⚙ Параметры</div>
+            <div class="section-title">
+                <span>⚙ Параметры</span>
+                <button class="btn-reset" id="reset-btn">↺ Сброс</button>
+            </div>
             <div id="sliders"></div>
         </div>
         <div class="section">
-            <div class="section-title">🖼 Текстуры</div>
-            <div class="texture-grid" id="texture-grid"></div>
-        </div>
-        <div class="section">
-            <div class="section-title">📋 CSS для OBS</div>
-            <div class="css-output" id="css-output">
+            <div class="css-output-header">
+                <span class="section-title" style="margin-bottom:0;">📋 CSS для OBS</span>
                 <button class="copy-btn" id="copy-css-btn">📋 Копировать</button>
+            </div>
+            <div class="css-output" id="css-output">
                 <code id="css-code"></code>
             </div>
         </div>
+        <details class="section">
+            <summary>🖼 Текстуры</summary>
+            <div class="texture-grid" id="texture-grid"></div>
+        </details>
     </div>
 
     <script id="vs" type="x-shader/x-vertex">
@@ -192,7 +265,6 @@
     </script>
 
     <script>
-        // === WebGL ===
         const canvas = document.getElementById('c');
         const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
         if (!gl) alert('WebGL не поддерживается');
@@ -202,34 +274,34 @@
             return val ? parseFloat(val) : fallback;
         }
 
-function loadTexture(url) {
-    return new Promise(function(resolve) {
-        var img = new Image();
-        img.onload = function() {
-            // Создаём canvas, чтобы перевернуть изображение
-            var cn = document.createElement('canvas');
-            cn.width = img.width;
-            cn.height = img.height;
-            var cx = cn.getContext('2d');
-            // Отражаем по вертикали
-            cx.translate(0, img.height);
-            cx.scale(1, -1);
-            cx.drawImage(img, 0, 0);
-            
-            var tex = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cn);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-            resolve(tex);
-        };
-        img.onerror = function() { resolve(null); };
-        img.src = url;
-    });
-}
+        function loadTexture(url, slotIndex) {
+            return new Promise(function(resolve) {
+                var img = new Image();
+                img.onload = function() {
+                    var cn = document.createElement('canvas');
+                    cn.width = img.width;
+                    cn.height = img.height;
+                    var cx = cn.getContext('2d');
+                    cx.translate(0, img.height);
+                    cx.scale(1, -1);
+                    cx.drawImage(img, 0, 0);
+                    
+                    gl.activeTexture(gl.TEXTURE0 + slotIndex);
+                    var tex = gl.createTexture();
+                    gl.bindTexture(gl.TEXTURE_2D, tex);
+                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cn);
+                    gl.generateMipmap(gl.TEXTURE_2D);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_NEAREST);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+                    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+                    resolve(tex);
+                };
+                img.onerror = function() { resolve(null); };
+                img.src = url;
+            });
+        }
+
         async function init() {
             var vs = gl.createShader(gl.VERTEX_SHADER);
             gl.shaderSource(vs, document.getElementById('vs').textContent);
@@ -268,8 +340,7 @@ function loadTexture(url) {
             for (var i = 0; i < texNames.length; i++) {
                 var loc = gl.getUniformLocation(program, texNames[i]);
                 if (loc) gl.uniform1i(loc, i);
-                gl.activeTexture(gl.TEXTURE0 + i);
-                await loadTexture('assets/' + texNames[i] + '.png');
+                await loadTexture('assets/' + texNames[i] + '.png', i);
             }
 
             function resize() {
@@ -304,7 +375,6 @@ function loadTexture(url) {
 
         init();
 
-        // === UI Панель ===
         var cssVars = [
             ['--speed','Скорость',0.1,10,0.1,2.0],
             ['--fov','FOV',0.5,3,0.1,1.2],
@@ -318,12 +388,11 @@ function loadTexture(url) {
             ['--fog-density','Туман',0,0.01,0.0001,0.001],
             ['--vignette-strength','Виньетка',0,0.5,0.01,0.1],
             ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
-            ['--tunnel-radius','Радиус',0.5,4,0.1,1.5],
+            ['--tunnel-radius','Радиус',2,3,0.1,1.5],
         ];
         var texLabels = ['Камень','Уголь','Железо','Лазурит','Золото','Редстоун','Алмаз','Изумруд'];
         var texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
 
-        // Слайдеры
         var slidersDiv = document.getElementById('sliders');
         cssVars.forEach(function(v) {
             var g = document.createElement('div'); g.className = 'slider-group';
@@ -331,7 +400,6 @@ function loadTexture(url) {
             slidersDiv.appendChild(g);
         });
 
-        // Превью текстур
         var texGrid = document.getElementById('texture-grid');
         texNames.forEach(function(name, i) {
             var item = document.createElement('div'); item.className = 'texture-item';
@@ -340,7 +408,6 @@ function loadTexture(url) {
             texGrid.appendChild(item);
         });
 
-        // События слайдеров
         document.querySelectorAll('input[type="range"]').forEach(function(s) {
             s.addEventListener('input', function() {
                 var v = parseFloat(s.value);
@@ -351,69 +418,114 @@ function loadTexture(url) {
             });
         });
 
-        // Панель
-        var panel = document.getElementById('panel');
-        var overlay = document.getElementById('panel-overlay');
-        var hint = document.getElementById('panel-hint');
-        var trigger = document.getElementById('panel-trigger');
-        var isOpen = false, isHoveringPanel = false, isHoveringTrigger = false, hideTimeout;
-
-        function openPanel() {
-            panel.classList.add('open'); overlay.classList.add('active');
-            hint.classList.remove('visible'); isOpen = true;
-            clearTimeout(hideTimeout); updateCssOutput();
-        }
-        function closePanel() {
-            panel.classList.remove('open'); overlay.classList.remove('active');
-            isOpen = false; clearTimeout(hideTimeout);
-            if (isHoveringTrigger) hint.classList.add('visible');
-        }
-        function scheduleHide() {
-            if (!isOpen) return;
-            clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(function() {
-                if (!isHoveringPanel && !isHoveringTrigger) closePanel();
-            }, 5000);
-        }
-
-        trigger.addEventListener('mouseenter', function() { isHoveringTrigger=true; hint.classList.add('visible'); clearTimeout(hideTimeout); });
-        trigger.addEventListener('mouseleave', function() { isHoveringTrigger=false; scheduleHide(); });
-        trigger.addEventListener('click', openPanel);
-        panel.addEventListener('mouseenter', function() { isHoveringPanel=true; clearTimeout(hideTimeout); });
-        panel.addEventListener('mouseleave', function() { isHoveringPanel=false; scheduleHide(); });
-        overlay.addEventListener('click', closePanel);
-        document.getElementById('close-btn').addEventListener('click', closePanel);
         document.getElementById('reset-btn').addEventListener('click', function() {
             cssVars.forEach(function(v) {
                 document.documentElement.style.setProperty(v[0], v[5]);
-                var s = document.querySelector('[data-css="'+v[0]+'"]');
-                if (s) s.value = v[5];
+                var slider = document.querySelector('input[data-css="'+v[0]+'"]');
+                if (slider) slider.value = v[5];
                 var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
             updateCssOutput();
         });
 
-        document.addEventListener('keydown', function(e) { if (e.key==='Escape' && isOpen) closePanel(); });
+        var toggleBtn = document.getElementById('toolbar-toggle');
+        var panelEl = document.getElementById('toolbar-panel');
+        var closeBtn = document.getElementById('toolbar-close');
+
+        var hideTimeout;
+        var HIDE_DELAY = 5000;
+
+        function showButton() {
+            toggleBtn.classList.remove('hidden');
+            resetHideTimer();
+        }
+
+        function hideButton() {
+            if (panelEl.classList.contains('open')) return;
+            toggleBtn.classList.add('hidden');
+        }
+
+        function resetHideTimer() {
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(hideButton, HIDE_DELAY);
+        }
+
+        document.addEventListener('mousemove', function(e) {
+            showButton();
+            if (panelEl.contains(e.target) || e.target === toggleBtn) {
+                clearTimeout(hideTimeout);
+            }
+        });
+
+        document.addEventListener('mouseleave', function() {
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(hideButton, 1000);
+        });
+
+        resetHideTimer();
+
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            panelEl.classList.toggle('open');
+            if (panelEl.classList.contains('open')) {
+                updateCssOutput();
+                clearTimeout(hideTimeout);
+            } else {
+                resetHideTimer();
+            }
+        });
+
+        closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            panelEl.classList.remove('open');
+            resetHideTimer();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!panelEl.contains(e.target) && e.target !== toggleBtn) {
+                panelEl.classList.remove('open');
+                resetHideTimer();
+            }
+        });
+
+        panelEl.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        panelEl.addEventListener('mouseenter', function() {
+            clearTimeout(hideTimeout);
+        });
+        panelEl.addEventListener('mouseleave', function() {
+            if (!panelEl.classList.contains('open')) {
+                resetHideTimer();
+            }
+        });
 
         function updateCssOutput() {
-            var lines = [':root {'];
+            var css = ':root {\n';
             cssVars.forEach(function(v) {
                 var val = getComputedStyle(document.documentElement).getPropertyValue(v[0]).trim();
-                lines.push('    '+v[0]+': '+val+';');
+                css += '  ' + v[0] + ': ' + val + ';\n';
             });
-            lines.push('}');
-            document.getElementById('css-code').textContent = lines.join('\n');
+            css += '}\n#toolbar-toggle, #toolbar-panel { display: none !important; }';
+            document.getElementById('css-code').textContent = css;
         }
 
         document.getElementById('copy-css-btn').addEventListener('click', function() {
-            var code = document.getElementById('css-code').textContent;
-            navigator.clipboard.writeText(code).then(function() {
+            var cssText = document.getElementById('css-code').textContent;
+            navigator.clipboard.writeText(cssText).then(function() {
                 var btn = document.getElementById('copy-css-btn');
-                btn.textContent = '✓ Скопировано!'; btn.classList.add('copied');
-                setTimeout(function() { btn.textContent = '📋 Копировать'; btn.classList.remove('copied'); }, 2000);
+                btn.textContent = '✓ Скопировано';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.textContent = '📋 Копировать';
+                    btn.classList.remove('copied');
+                }, 2000);
             });
         });
+
+        updateCssOutput();
     </script>
 </body>
 </html>
