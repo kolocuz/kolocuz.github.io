@@ -6,10 +6,10 @@
     <title>Minecraft Shader</title>
     <style>
         :root {
-            --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-threshold: 0.06;
-            --ore-blend-min: 0.6; --ore-blend-max: 0.4; --roughness-scale: 0.25;
-            --crack-chance: 0.15; --hole-depth: -0.35; --fog-density: 0.001;
-            --vignette-strength: 0.1; --brightness-mult: 1.5; --tunnel-radius: 1.5;
+            --speed: 2.0; --fov: 1.2; --max-steps: 100; --ore-amount: 20;
+            --roughness-scale: 0.25; --crack-chance: 0.15; --hole-depth: -0.35;
+            --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
+            --tunnel-radius: 1.5;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
@@ -76,8 +76,13 @@
             background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px;
         }
         .slider-group input[type="range"] {
-            width: 100%; height: 3px; accent-color: rgba(255,255,255,0.4);
-            appearance: none; background: rgba(255,255,255,0.08); border-radius: 2px; outline: none;
+            width: 100%; height: 4px; accent-color: #fff;
+            appearance: none; background: rgba(255,255,255,0.15); border-radius: 2px; outline: none;
+            cursor: pointer;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            appearance: none; width: 12px; height: 12px; background: #fff;
+            border-radius: 50%; cursor: pointer;
         }
 
         .toggle-group {
@@ -385,15 +390,20 @@
                 var newSpeed = cssNum('--speed', 2);
                 timeAccum += dt * currentSpeed;
                 currentSpeed = newSpeed;
+
+                var oreAmount = cssNum('--ore-amount', 20) / 100;
+                var stoneThreshold = 0.96 - oreAmount * 0.46;
+                var oreBlendMin = 0.3 + oreAmount * 0.5;
+                var oreBlendMax = 0.1 + oreAmount * 0.5;
                 
                 gl.uniform1f(uTime, timeAccum);
                 gl.uniform2f(uRes, canvas.width, canvas.height);
                 gl.uniform1f(NU.u_speed, 1.0);
                 gl.uniform1f(NU.u_fov, cssNum('--fov', 1.2));
                 gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps', 100));
-                gl.uniform1f(NU.u_stoneThreshold, cssNum('--stone-threshold', 0.06));
-                gl.uniform1f(NU.u_oreBlendMin, cssNum('--ore-blend-min', 0.6));
-                gl.uniform1f(NU.u_oreBlendMax, cssNum('--ore-blend-max', 0.4));
+                gl.uniform1f(NU.u_stoneThreshold, stoneThreshold);
+                gl.uniform1f(NU.u_oreBlendMin, oreBlendMin);
+                gl.uniform1f(NU.u_oreBlendMax, oreBlendMax);
                 gl.uniform1f(NU.u_roughnessScale, cssNum('--roughness-scale', 0.25));
                 gl.uniform1f(NU.u_crackChance, cssNum('--crack-chance', 0.15));
                 gl.uniform1f(NU.u_holeDepth, cssNum('--hole-depth', -0.35));
@@ -413,9 +423,7 @@
             ['--speed','Скорость полёта',0.1,10,0.1,2.0],
             ['--fov','Угол обзора',0.5,3,0.1,1.2],
             ['--max-steps','Дальность прорисовки',10,200,1,100],
-            ['--stone-threshold','Количество руды',0.5,1,0.01,0.06],
-            ['--ore-blend-min','Плотность руды',0,1,0.01,0.6],
-            ['--ore-blend-max','Контраст руды',0,1,0.01,0.4],
+            ['--ore-amount','Количество руды',0,100,1,20],
             ['--roughness-scale','Рельеф стен',0,0.5,0.01,0.25],
             ['--crack-chance','Частота трещин',0,0.5,0.01,0.15],
             ['--hole-depth','Глубина трещин',-1,0,0.01,-0.35],
@@ -424,7 +432,6 @@
             ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
             ['--tunnel-radius','Ширина тоннеля',2,3,0.1,1.5],
         ];
-        var texLabels = ['Камень','Уголь','Железо','Лазурит','Золото','Редстоун','Алмаз','Изумруд'];
         var texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
 
         var slidersDiv = document.getElementById('sliders');
@@ -435,7 +442,7 @@
         });
 
         var texGrid = document.getElementById('texture-grid');
-        texNames.forEach(function(name, i) {
+        texNames.forEach(function(name) {
             var item = document.createElement('div'); item.className = 'texture-item';
             item.style.backgroundImage = 'url(assets/'+name+'.png)';
             texGrid.appendChild(item);
