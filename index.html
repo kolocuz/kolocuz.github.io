@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="darkreader-lock" content="1">
+    <meta http-equiv="color-scheme" content="only light">
     <title>Minecraft Shader</title>
     <style>
+        html, body, #toolbar-panel, #toolbar-panel *, #toolbar-toggle, #watermark, #guide-modal, .guide-modal-content {
+            color-scheme: only light !important;
+            forced-color-adjust: none !important;
+            -webkit-text-fill-color: currentColor !important;
+        }
+
         :root {
             --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-threshold: 5;
             --roughness-scale: 0.25; --crack-chance: 0.15; --hole-depth: -0.35;
             --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
             --tunnel-radius: 1.5;
+            --ore-coal: 1; --ore-iron: 1; --ore-lapis: 1; --ore-gold: 1;
+            --ore-redstone: 1; --ore-diamond: 1; --ore-emerald: 1;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
@@ -17,167 +27,226 @@
 
         #watermark {
             position: fixed; bottom: 16px; left: 16px; z-index: 50;
-            color: rgba(255,255,255,0.2); font-size: 11px; pointer-events: auto;
-            transition: opacity 0.3s; user-select: none;
+            font-size: 12px; pointer-events: auto; user-select: none;
+            color: #fff !important;
         }
-        #watermark a { color: rgba(255,255,255,0.2); text-decoration: none; }
-        #watermark a:hover { color: rgba(255,255,255,0.5); }
-        #watermark.hidden { opacity: 0; }
+        #watermark a { color: #fff !important; text-decoration: none; }
+        #watermark a:hover { color: #ddd !important; }
 
         #toolbar-toggle {
             position: fixed; top: 12px; right: 12px; z-index: 100;
-            width: 32px; height: 32px; border-radius: 6px;
-            background: rgba(0,0,0,0.4); border: none; color: rgba(255,255,255,0.5);
-            font-size: 16px; display: flex; align-items: center;
-            justify-content: center; cursor: pointer;
-            transition: opacity 0.4s, background 0.2s, color 0.2s;
-            opacity: 1; backdrop-filter: blur(4px);
+            width: 36px; height: 36px; border-radius: 6px;
+            background: #0a0a0a !important; border: 2px solid #fff;
+            color: #fff !important; font-size: 18px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: opacity 0.4s, background 0.2s, transform 0.2s;
+            opacity: 1; box-shadow: 0 0 15px rgba(255,255,255,0.2);
         }
         #toolbar-toggle.hidden { opacity: 0; pointer-events: none; }
-        #toolbar-toggle:hover { background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.9); }
+        #toolbar-toggle:hover { background: #222 !important; transform: scale(1.05); }
 
         #toolbar-panel {
             position: fixed; top: 52px; right: 12px; z-index: 101;
-            width: 260px; max-height: calc(100vh - 80px);
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+            width: 270px; max-height: calc(100vh - 80px);
+            background: #0a0a0a !important; border: 1px solid rgba(255,255,255,0.4);
             border-radius: 8px; display: flex; flex-direction: column; overflow-y: auto;
             opacity: 0; visibility: hidden; transform: translateY(-6px);
             transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
-            color: #ccc; font-size: 12px; padding: 10px 0;
+            font-size: 12px; padding: 0;
+            box-shadow: 0 0 30px rgba(255,255,255,0.15), 0 8px 20px rgba(0,0,0,0.8);
+            color: #fff !important;
         }
         #toolbar-panel.open { opacity: 1; visibility: visible; transform: translateY(0); }
-        #toolbar-panel::-webkit-scrollbar { width: 2px; }
-        #toolbar-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 1px; }
+        #toolbar-panel::-webkit-scrollbar { width: 3px; }
+        #toolbar-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+
+        #toolbar-panel * { color: #fff !important; }
+
+        #toolbar-panel .btn-reset,
+        #toolbar-panel .copy-btn,
+        #toolbar-panel .guide-btn,
+        #toolbar-panel .slider-group .val {
+            background: #fff !important;
+            color: #000 !important;
+        }
+
+        #toolbar-panel .css-output,
+        #toolbar-panel .css-output * {
+            color: #0f0 !important;
+            background: #000 !important;
+        }
+
+        #toolbar-panel .texture-item .crosshair {
+            color: transparent !important;
+            -webkit-text-fill-color: transparent !important;
+        }
+        #toolbar-panel .texture-item:hover .crosshair {
+            color: rgba(255,255,255,0.5) !important;
+            -webkit-text-fill-color: rgba(255,255,255,0.5) !important;
+        }
+        #toolbar-panel .texture-item.disabled .crosshair {
+            color: #f00 !important;
+            -webkit-text-fill-color: #f00 !important;
+        }
+        #toolbar-panel .texture-item.disabled .texture-label {
+            color: #faa !important;
+        }
 
         .panel-header {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 4px 14px 10px; font-weight: 600; color: rgba(255,255,255,0.7); font-size: 13px;
+            padding: 12px 16px; font-weight: 700; font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
         }
         .panel-header button {
-            background: none; border: none; color: rgba(255,255,255,0.3); font-size: 16px;
-            cursor: pointer; padding: 0 4px; line-height: 1;
+            background: none !important; border: none; font-size: 18px;
+            cursor: pointer; padding: 0 4px; line-height: 1; transition: opacity 0.2s;
         }
-        .panel-header button:hover { color: rgba(255,255,255,0.7); }
+        .panel-header button:hover { opacity: 0.7; }
 
-        .section { padding: 6px 14px; border-top: 1px solid rgba(255,255,255,0.04); }
+        .section {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
         .section-title {
-            font-size: 10px; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.3px; color: rgba(255,255,255,0.3); margin-bottom: 6px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; margin-bottom: 10px;
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        .slider-group { margin-bottom: 2px; }
+        .slider-group { margin-bottom: 6px; }
         .slider-group label {
-            display: flex; justify-content: space-between; font-size: 10px;
-            color: rgba(255,255,255,0.4); margin-bottom: 2px;
+            display: flex; justify-content: space-between; font-size: 11px;
+            margin-bottom: 4px;
         }
         .slider-group .val {
-            font-size: 9px; color: rgba(255,255,255,0.5);
-            background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px;
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 4px;
         }
         .slider-group input[type="range"] {
-            width: 100%; height: 3px; accent-color: rgba(255,255,255,0.8);
-            appearance: none; background: rgba(255,255,255,0.08); border-radius: 2px; outline: none;
+            width: 100%; height: 4px; accent-color: #fff;
+            appearance: none; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none;
         }
-
-        .toggle-group {
-            display: flex; align-items: center; justify-content: space-between;
-            font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px;
+        input[type="range"]:focus, input[type="range"]:active {
+            outline: none; accent-color: #fff; background: rgba(255,255,255,0.2);
         }
-        .toggle-group input[type="checkbox"] {
-            width: 28px; height: 16px; appearance: none;
-            background: rgba(255,255,255,0.15); border-radius: 8px; position: relative;
-            cursor: pointer; transition: background 0.2s;
-        }
-        .toggle-group input[type="checkbox"]::before {
-            content: ''; position: absolute; top: 2px; left: 2px;
-            width: 12px; height: 12px; background: #fff;
-            border-radius: 50%; transition: transform 0.2s;
-        }
-        .toggle-group input[type="checkbox"]:checked { background: rgba(255,255,255,0.4); }
-        .toggle-group input[type="checkbox"]:checked::before { transform: translateX(12px); }
 
         .btn-reset {
-            background: none; color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.1);
-            padding: 2px 8px; border-radius: 4px; cursor: pointer;
-            font-size: 9px; transition: all 0.2s;
+            border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer;
+            font-size: 10px; font-weight: 700; transition: all 0.2s;
         }
-        .btn-reset:hover { color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.3); }
+        .btn-reset:hover { background: #ddd !important; }
+        .btn-reset:active { background: #ddd !important; outline: none; }
 
         .css-output {
-            background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.5);
-            padding: 6px; border-radius: 4px; font-family: monospace; font-size: 8px;
-            max-height: 100px; overflow-y: auto; white-space: pre-wrap;
+            padding: 8px; border-radius: 4px;
+            font-family: monospace; font-size: 9px;
+            max-height: 120px; overflow-y: auto; white-space: pre-wrap;
+            border: 1px solid rgba(255,255,255,0.15);
         }
         .css-output-header {
             display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .copy-btn {
-            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5);
-            border: none; padding: 2px 6px; border-radius: 3px; font-size: 9px;
-            cursor: pointer; font-weight: 600; transition: all 0.2s;
+            border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px;
+            cursor: pointer; font-weight: 700; transition: all 0.2s;
         }
-        .copy-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
-        .copy-btn.copied { background: rgba(76,175,80,0.5); color: #fff; }
+        .copy-btn:hover { background: #ddd !important; }
+        .copy-btn:active { background: #ddd !important; outline: none; }
+        .copy-btn.copied { background: #4caf50 !important; color: #fff !important; }
 
-        details.section { padding: 6px 14px; }
+        details.section {
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border-left: 3px solid #fff;
+            margin: 0;
+        }
+        details.section[open] { background: rgba(255,255,255,0.05); }
         details summary {
-            cursor: pointer; outline: none; font-size: 10px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.3px; color: rgba(255,255,255,0.3);
-            margin-bottom: 4px;
+            cursor: pointer; outline: none; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 6px; transition: opacity 0.2s;
         }
-        details summary:hover { color: rgba(255,255,255,0.6); }
+        details summary:hover { opacity: 0.8; }
+        details summary:focus, details summary:active { outline: none; }
 
-        .texture-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+        .texture-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
+        }
         .texture-item {
-            aspect-ratio: 1; border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 3px; background-size: cover; background-position: center;
+            position: relative; aspect-ratio: 1;
+            border: 2px solid rgba(255,255,255,0.2); border-radius: 5px;
+            background-size: cover; background-position: center;
             image-rendering: pixelated; background-color: #111;
+            cursor: pointer; transition: all 0.2s; overflow: hidden;
+        }
+        .texture-item:hover { border-color: #fff; transform: scale(1.05); }
+        .texture-item:focus, .texture-item:active { outline: none; border-color: rgba(255,255,255,0.2); }
+        .texture-item.disabled {
+            opacity: 0.5; border-color: #f33 !important;
+            box-shadow: inset 0 0 20px rgba(255,0,0,0.3);
+        }
+        .texture-item .crosshair {
+            position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; pointer-events: none;
+            font-size: 34px; text-shadow: none; transition: color 0.2s, text-shadow 0.2s;
+        }
+        .texture-item:hover .crosshair {
+            text-shadow: 0 0 10px rgba(0,0,0,0.9);
+        }
+        .texture-item.disabled .crosshair {
+            text-shadow: 0 0 20px rgba(255,0,0,0.9);
+        }
+        .texture-label {
+            position: absolute; bottom: 3px; left: 5px;
+            font-size: 9px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 3px;
+            pointer-events: none;
         }
 
         .guide-btn {
-            background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.4); padding: 6px 12px; border-radius: 4px;
-            cursor: pointer; font-size: 10px; width: 100%; transition: all 0.2s;
+            border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer;
+            font-size: 11px; font-weight: 700; width: 100%; transition: all 0.2s;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .guide-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.15); }
+        .guide-btn:hover { background: #ddd !important; }
+        .guide-btn:active { background: #ddd !important; outline: none; }
 
         .footer-link {
-            padding: 8px 14px 4px; border-top: 1px solid rgba(255,255,255,0.04);
+            padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.15);
             text-align: center;
         }
         .footer-link a {
-            font-size: 10px; color: rgba(255,255,255,0.25); text-decoration: none;
-            transition: color 0.2s;
+            font-size: 11px; text-decoration: none;
+            font-weight: 600; transition: opacity 0.2s;
         }
-        .footer-link a:hover { color: rgba(255,255,255,0.5); }
+        .footer-link a:hover { opacity: 0.7; }
 
         #guide-modal {
             position: fixed; inset: 0; z-index: 200;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
             display: flex; align-items: center; justify-content: center;
             opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
         }
         .guide-modal-content {
             position: relative; max-width: 650px; width: 90vw; max-height: 85vh;
-            background: rgba(16,16,24,0.95); border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.06);
-            padding: 20px; overflow-y: auto; color: #ccc; font-size: 13px; line-height: 1.7;
+            background: #0a0a0a !important; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 24px; overflow-y: auto; font-size: 14px; line-height: 1.7;
+            color: #fff !important;
         }
+        .guide-modal-content * { color: #fff !important; }
+        .guide-modal-content code { color: #000 !important; background: #fff !important; }
         .guide-modal-close {
-            position: absolute; top: 10px; right: 10px;
-            width: 24px; height: 24px; border-radius: 4px;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.4); font-size: 12px; cursor: pointer;
+            position: absolute; top: 12px; right: 12px;
+            width: 28px; height: 28px; border-radius: 4px;
+            background: #fff !important; border: none;
+            color: #000 !important; font-size: 14px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
+            font-weight: 700; transition: background 0.2s;
         }
-        .guide-modal-close:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
-
-        @media (max-width: 440px) {
-            #toolbar-panel { width: calc(100vw - 20px); right: 6px; }
-        }
+        .guide-modal-close:hover { background: #ddd !important; }
     </style>
 </head>
 <body>
@@ -197,10 +266,6 @@
                 <button class="btn-reset" id="reset-btn">Сброс</button>
             </div>
             <div id="sliders"></div>
-            <div class="toggle-group">
-                <span>Вотермарка</span>
-                <input type="checkbox" id="watermark-toggle" checked>
-            </div>
         </div>
         <div class="section">
             <div class="css-output-header">
@@ -214,8 +279,8 @@
         <div class="section" style="text-align:center;">
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
-        <details class="section">
-            <summary>Текстуры</summary>
+        <details class="section" open>
+            <summary>Руды <span style="font-weight:400;text-transform:none;font-size:9px;">(клик — скрыть)</span></summary>
             <div class="texture-grid" id="texture-grid"></div>
         </details>
         <div class="footer-link">
@@ -226,26 +291,16 @@
     <div id="guide-modal">
         <div class="guide-modal-content">
             <button class="guide-modal-close" id="guide-close">✕</button>
-
-            <h3 style="color:rgba(255,255,255,0.8);margin-bottom:14px;font-size:16px;">Как добавить в OBS</h3>
-
+            <h3 style="margin-bottom:16px;font-size:18px;">Как добавить в OBS</h3>
             <p><b>1.</b> Настройте шейдер под себя с помощью ползунков в панели.</p>
-
-            <p style="margin-top:10px;"><b>2.</b> В OBS добавьте источник <b>«Браузер»</b>.</p>
-
-            <p style="margin-top:10px;"><b>3.</b> В поле <b>URL</b> вставьте адрес сайта, как показано на скриншоте:</p>
-            <code style="background:rgba(255,255,255,0.06);padding:3px 8px;border-radius:4px;font-size:12px;">https://kolocuz.github.io</code>
-            <img src="assets/guide-url.png" alt="Поле URL в OBS" style="
-                width:100%; border-radius:6px; display:block; margin-top:8px;
-            ">
-
-            <p style="margin-top:14px;"><b>4.</b> Скопируйте <b>CSS для OBS</b> из панели настроек и вставьте в поле <b>«CSS»</b>, как на скриншоте:</p>
-            <img src="assets/guide-css.png" alt="Поле CSS в OBS" style="
-                width:100%; border-radius:6px; display:block; margin-top:8px;
-            ">
-
-            <p style="margin-top:14px;color:rgba(255,255,255,0.4);font-size:11px;">
-                <b>💡 Совет:</b> В OBS можно изменить ширину и высоту источника. Если шейдер лагает — уменьшите разрешение и растяните. Если качество низкое — увеличьте или поставьте нативное разрешение экрана.
+            <p style="margin-top:12px;"><b>2.</b> В OBS добавьте источник <b>«Браузер»</b>.</p>
+            <p style="margin-top:12px;"><b>3.</b> В поле <b>URL</b> вставьте адрес сайта:</p>
+            <code style="padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;">https://kolocuz.github.io</code>
+            <img src="assets/guide-url.png" alt="URL в OBS" style="width:100%;border-radius:6px;display:block;margin-top:8px;">
+            <p style="margin-top:14px;"><b>4.</b> Скопируйте <b>CSS для OBS</b> из панели и вставьте в поле <b>«CSS»</b>:</p>
+            <img src="assets/guide-css.png" alt="CSS в OBS" style="width:100%;border-radius:6px;display:block;margin-top:8px;">
+            <p style="margin-top:16px;font-size:12px;">
+                <b>💡 Совет:</b> Если шейдер лагает — уменьшите разрешение источника. Если качество низкое — увеличьте.
             </p>
         </div>
     </div>
@@ -278,6 +333,13 @@
         uniform sampler2D redstone_ore;
         uniform sampler2D diamond_ore;
         uniform sampler2D emerald_ore;
+        uniform float u_oreCoal;
+        uniform float u_oreIron;
+        uniform float u_oreLapis;
+        uniform float u_oreGold;
+        uniform float u_oreRedstone;
+        uniform float u_oreDiamond;
+        uniform float u_oreEmerald;
 
         float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 
@@ -306,6 +368,15 @@
             float r=hash(id+vec3(5,7,11));
             int o=0;
             if(r<0.45) o=0; else if(r<0.70) o=1; else if(r<0.80) o=2; else if(r<0.87) o=3; else if(r<0.94) o=4; else if(r<0.98) o=5; else o=6;
+            float enabled = 1.0;
+            if(o==0) enabled = u_oreCoal;
+            else if(o==1) enabled = u_oreIron;
+            else if(o==2) enabled = u_oreLapis;
+            else if(o==3) enabled = u_oreGold;
+            else if(o==4) enabled = u_oreRedstone;
+            else if(o==5) enabled = u_oreDiamond;
+            else if(o==6) enabled = u_oreEmerald;
+            if(enabled < 0.5) return getTex(uv,-1).rgb;
             return mix(getTex(uv,-1).rgb, getTex(uv,o).rgb, 1.0);
         }
 
@@ -394,6 +465,15 @@
             });
         }
 
+        const DEFAULTS = {
+            '--speed': 2.0, '--fov': 1.2, '--max-steps': 100, '--stone-threshold': 5,
+            '--roughness-scale': 0.25, '--crack-chance': 0.15, '--hole-depth': -0.35,
+            '--fog-density': 0.001, '--vignette-strength': 0.1, '--brightness-mult': 1.5,
+            '--tunnel-radius': 1.5,
+            '--ore-coal': 1, '--ore-iron': 1, '--ore-lapis': 1, '--ore-gold': 1,
+            '--ore-redstone': 1, '--ore-diamond': 1, '--ore-emerald': 1
+        };
+
         async function init() {
             var vs = gl.createShader(gl.VERTEX_SHADER);
             gl.shaderSource(vs, document.getElementById('vs').textContent);
@@ -421,7 +501,9 @@
             var NU = {};
             ['u_speed','u_fov','u_maxSteps','u_stoneThreshold',
              'u_roughnessScale','u_crackChance','u_holeDepth','u_fogDensity','u_vignetteStrength',
-             'u_brightnessMult','u_tunnelRadius'].forEach(function(n) {
+             'u_brightnessMult','u_tunnelRadius',
+             'u_oreCoal','u_oreIron','u_oreLapis','u_oreGold','u_oreRedstone','u_oreDiamond','u_oreEmerald'
+            ].forEach(function(n) {
                 NU[n] = gl.getUniformLocation(program, n);
             });
             var uTime = gl.getUniformLocation(program, 'time');
@@ -446,17 +528,7 @@
             var lastTs = 0;
             var currentSpeed = cssNum('--speed', 2);
 
-            function render(ts) {
-                if (lastTs === 0) lastTs = ts;
-                var dt = (ts - lastTs) * 0.001;
-                lastTs = ts;
-                
-                var newSpeed = cssNum('--speed', 2);
-                timeAccum += dt * currentSpeed;
-                currentSpeed = newSpeed;
-                
-                gl.uniform1f(uTime, timeAccum);
-                gl.uniform2f(uRes, canvas.width, canvas.height);
+            function updateUniforms() {
                 gl.uniform1f(NU.u_speed, 1.0);
                 gl.uniform1f(NU.u_fov, cssNum('--fov', 1.2));
                 gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps', 100));
@@ -468,6 +540,27 @@
                 gl.uniform1f(NU.u_vignetteStrength, cssNum('--vignette-strength', 0.1));
                 gl.uniform1f(NU.u_brightnessMult, cssNum('--brightness-mult', 1.5));
                 gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 1.5));
+                gl.uniform1f(NU.u_oreCoal, cssNum('--ore-coal', 1));
+                gl.uniform1f(NU.u_oreIron, cssNum('--ore-iron', 1));
+                gl.uniform1f(NU.u_oreLapis, cssNum('--ore-lapis', 1));
+                gl.uniform1f(NU.u_oreGold, cssNum('--ore-gold', 1));
+                gl.uniform1f(NU.u_oreRedstone, cssNum('--ore-redstone', 1));
+                gl.uniform1f(NU.u_oreDiamond, cssNum('--ore-diamond', 1));
+                gl.uniform1f(NU.u_oreEmerald, cssNum('--ore-emerald', 1));
+            }
+
+            function render(ts) {
+                if (lastTs === 0) lastTs = ts;
+                var dt = (ts - lastTs) * 0.001;
+                lastTs = ts;
+                
+                var newSpeed = cssNum('--speed', 2);
+                timeAccum += dt * currentSpeed;
+                currentSpeed = newSpeed;
+                
+                gl.uniform1f(uTime, timeAccum);
+                gl.uniform2f(uRes, canvas.width, canvas.height);
+                updateUniforms();
                 gl.drawArrays(gl.TRIANGLES, 0, 3);
                 requestAnimationFrame(render);
             }
@@ -480,7 +573,7 @@
             ['--speed','Скорость полёта',0.1,10,0.1,2.0],
             ['--fov','Угол обзора',0.5,3,0.1,1.2],
             ['--max-steps','Дальность прорисовки',10,200,1,100],
-            ['--stone-threshold','Количество руды',0,10,1,5],
+            ['--stone-threshold','Количество руды',0,50,1,5],
             ['--roughness-scale','Рельеф стен',0,0.5,0.01,0.25],
             ['--crack-chance','Частота трещин',0,0.5,0.01,0.15],
             ['--hole-depth','Глубина трещин',-1,0,0.01,-0.35],
@@ -489,7 +582,14 @@
             ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
             ['--tunnel-radius','Ширина тоннеля',2,3,0.1,1.5],
         ];
-        var texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
+        var oreNames = ['coal','iron','lapis','gold','redstone','diamond','emerald'];
+
+        cssVars.forEach(function(v) {
+            document.documentElement.style.setProperty(v[0], v[5]);
+        });
+        oreNames.forEach(function(name) {
+            document.documentElement.style.setProperty('--ore-'+name, 1);
+        });
 
         var slidersDiv = document.getElementById('sliders');
         cssVars.forEach(function(v) {
@@ -499,9 +599,30 @@
         });
 
         var texGrid = document.getElementById('texture-grid');
-        texNames.forEach(function(name) {
-            var item = document.createElement('div'); item.className = 'texture-item';
-            item.style.backgroundImage = 'url(assets/'+name+'.png)';
+        var oreState = {};
+        oreNames.forEach(function(name) {
+            oreState[name] = 1;
+            var item = document.createElement('div'); 
+            item.className = 'texture-item';
+            item.dataset.ore = name;
+            item.style.backgroundImage = 'url(assets/'+name+'_ore.png)';
+            var cross = document.createElement('div');
+            cross.className = 'crosshair';
+            cross.textContent = '✕';
+            item.appendChild(cross);
+            var label = document.createElement('div');
+            label.className = 'texture-label';
+            label.textContent = name;
+            item.appendChild(label);
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var ore = this.dataset.ore;
+                var newState = oreState[ore] === 1 ? 0 : 1;
+                oreState[ore] = newState;
+                this.classList.toggle('disabled', newState === 0);
+                document.documentElement.style.setProperty('--ore-'+ore, newState);
+                updateCssOutput();
+            });
             texGrid.appendChild(item);
         });
 
@@ -523,24 +644,66 @@
                 var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
-            document.getElementById('watermark-toggle').checked = true;
-            document.getElementById('watermark').classList.remove('hidden');
+            oreNames.forEach(function(name) {
+                oreState[name] = 1;
+                document.documentElement.style.setProperty('--ore-'+name, 1);
+                var item = texGrid.querySelector('.texture-item[data-ore="'+name+'"]');
+                if (item) item.classList.remove('disabled');
+            });
             updateCssOutput();
+        });
+
+        function updateCssOutput() {
+            var css = ':root {\n';
+            var hasChanges = false;
+            var style = getComputedStyle(document.documentElement);
+            
+            cssVars.forEach(function(v) {
+                var key = v[0];
+                var val = style.getPropertyValue(key).trim();
+                var def = DEFAULTS[key];
+                if (val === '' || isNaN(parseFloat(val))) val = def;
+                if (parseFloat(val) !== def) {
+                    css += '  ' + key + ': ' + val + ';\n';
+                    hasChanges = true;
+                }
+            });
+            
+            oreNames.forEach(function(name) {
+                var key = '--ore-'+name;
+                var val = style.getPropertyValue(key).trim();
+                var def = DEFAULTS[key];
+                if (val === '' || isNaN(parseFloat(val))) val = def;
+                if (parseFloat(val) !== def) {
+                    css += '  ' + key + ': ' + val + ';\n';
+                    hasChanges = true;
+                }
+            });
+            
+            if (!hasChanges) {
+                css += '  /* все значения по умолчанию */\n';
+            }
+            
+            css += '}\n#toolbar-toggle, #toolbar-panel { display: none !important; }';
+            document.getElementById('css-code').textContent = css;
+        }
+
+        document.getElementById('copy-css-btn').addEventListener('click', function() {
+            var cssText = document.getElementById('css-code').textContent;
+            navigator.clipboard.writeText(cssText).then(function() {
+                var btn = document.getElementById('copy-css-btn');
+                btn.textContent = 'Скопировано';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.textContent = 'Копировать';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
         });
 
         var toggleBtn = document.getElementById('toolbar-toggle');
         var panelEl = document.getElementById('toolbar-panel');
         var closeBtn = document.getElementById('toolbar-close');
-        var watermark = document.getElementById('watermark');
-        var watermarkToggle = document.getElementById('watermark-toggle');
-
-        watermarkToggle.addEventListener('change', function() {
-            if (this.checked) {
-                watermark.classList.remove('hidden');
-            } else {
-                watermark.classList.add('hidden');
-            }
-        });
 
         var hideTimeout;
         var HIDE_DELAY = 5000;
@@ -611,32 +774,6 @@
             }
         });
 
-        function updateCssOutput() {
-            var css = ':root {\n';
-            cssVars.forEach(function(v) {
-                var val = getComputedStyle(document.documentElement).getPropertyValue(v[0]).trim();
-                css += '  ' + v[0] + ': ' + val + ';\n';
-            });
-            css += '}\n#toolbar-toggle, #toolbar-panel { display: none !important; }';
-            if (!watermarkToggle.checked) {
-                css += '\n#watermark { display: none !important; }';
-            }
-            document.getElementById('css-code').textContent = css;
-        }
-
-        document.getElementById('copy-css-btn').addEventListener('click', function() {
-            var cssText = document.getElementById('css-code').textContent;
-            navigator.clipboard.writeText(cssText).then(function() {
-                var btn = document.getElementById('copy-css-btn');
-                btn.textContent = 'Скопировано';
-                btn.classList.add('copied');
-                setTimeout(function() {
-                    btn.textContent = 'Копировать';
-                    btn.classList.remove('copied');
-                }, 2000);
-            });
-        });
-
         var guideBtn = document.getElementById('guide-btn');
         var guideModal = document.getElementById('guide-modal');
         var guideClose = document.getElementById('guide-close');
@@ -666,7 +803,7 @@
             }
         });
 
-        updateCssOutput();
+        setTimeout(updateCssOutput, 150);
     </script>
 </body>
 </html>
