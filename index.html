@@ -300,6 +300,12 @@
             <p style="margin-top:16px;font-size:12px;">
                 <b>💡 Совет:</b> Если шейдер лагает — уменьшите разрешение источника. Если качество низкое — увеличьте.
             </p>
+            <p style="margin-top:8px;color:#ccc;font-size:11px;">
+                <b>📐 Рекомендуемые разрешения:</b><br>
+                4:3 — 800×600, 1024×768<br>
+                16:9 — 1280×720, 1920×1080<br>
+                16:10 — 1280×800, 1680×1050
+            </p>
         </div>
     </div>
 
@@ -662,7 +668,7 @@
                 var def = DEFAULTS[key];
                 if (val === '' || isNaN(parseFloat(val))) val = def;
                 if (parseFloat(val) !== def) {
-                    css += '  ' + key + ': ' + val + ';\n';
+                    css += '  ' + key + ': ' + val + ' !important;\n';
                     hasChanges = true;
                 }
             });
@@ -673,7 +679,7 @@
                 var def = DEFAULTS[key];
                 if (val === '' || isNaN(parseFloat(val))) val = def;
                 if (parseFloat(val) !== def) {
-                    css += '  ' + key + ': ' + val + ';\n';
+                    css += '  ' + key + ': ' + val + ' !important;\n';
                     hasChanges = true;
                 }
             });
