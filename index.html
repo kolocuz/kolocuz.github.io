@@ -272,7 +272,7 @@
         <div class="section" style="text-align:center;">
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
-        <details class="section">
+        <details class="section" id="ore-section">
             <summary>Руды <span style="font-weight:400;text-transform:none;font-size:9px;">(клик — вкл/выкл)</span></summary>
             <div id="ore-sliders"></div>
             <div class="texture-grid" id="texture-grid"></div>
@@ -290,7 +290,12 @@
             <p style="margin-top:12px;"><b>2.</b> В OBS добавьте источник <b>«Браузер»</b>.</p>
             <p style="margin-top:12px;"><b>3.</b> В поле <b>URL</b> вставьте адрес сайта:</p>
             <code style="padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;">https://kolocuz.github.io</code>
+            <img src="assets/guide-url.png" alt="URL в OBS" style="width:100%;border-radius:6px;display:block;margin-top:8px;">
             <p style="margin-top:14px;"><b>4.</b> Скопируйте <b>CSS для OBS</b> из панели и вставьте в поле <b>«CSS»</b>:</p>
+            <img src="assets/guide-css.png" alt="CSS в OBS" style="width:100%;border-radius:6px;display:block;margin-top:8px;">
+            <p style="margin-top:16px;font-size:12px;">
+                <b>💡 Совет:</b> Если шейдер лагает — уменьшите разрешение источника. Если качество низкое — увеличьте.
+            </p>
         </div>
     </div>
 
@@ -357,7 +362,10 @@
             // Плотность руды (0-100)
             if (h * 100.0 > u_stoneDensity) return getTex(uv, -1).rgb;
             
-            // Собираем включённые руды (без весов)
+            // Другой hash для выбора типа руды — чтобы руды были перемешаны
+            float h2 = hash(id + vec3(9.0, 13.0, 7.0));
+            
+            // Собираем включённые руды
             float enabled[7];
             enabled[0] = u_oreCoal;
             enabled[1] = u_oreIron;
@@ -367,7 +375,6 @@
             enabled[5] = u_oreDiamond;
             enabled[6] = u_oreEmerald;
             
-            // Считаем количество включённых руд
             float count = 0.0;
             for (int i = 0; i < 7; i++) {
                 if (enabled[i] > 0.5) count += 1.0;
@@ -376,7 +383,7 @@
             if (count < 0.5) return getTex(uv, -1).rgb;
             
             // Равномерный выбор из включённых
-            float r = h * count;
+            float r = h2 * count;
             float accum = 0.0;
             int ore = -1;
             
@@ -652,6 +659,7 @@
             updateCssOutput();
         });
 
+        // Ползунок плотности внутри секции руд
         var oreSlidersDiv = document.getElementById('ore-sliders');
         var densityGroup = document.createElement('div');
         densityGroup.className = 'slider-group';
