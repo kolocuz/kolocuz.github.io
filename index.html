@@ -18,13 +18,13 @@
             --roughness-scale: 0.25; --crack-intensity: 0.5;
             --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
             --tunnel-radius: 0.8; --seed-text: "__random__";
-            --chance-coal: 10;
-            --chance-iron: 5;
-            --chance-lapis: 3;
-            --chance-gold: 3;
-            --chance-redstone: 2;
-            --chance-diamond: 1;
-            --chance-emerald: 1;
+            --chance-coal: 40;
+            --chance-iron: 20;
+            --chance-lapis: 10;
+            --chance-gold: 10;
+            --chance-redstone: 8;
+            --chance-diamond: 7;
+            --chance-emerald: 5;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
@@ -60,7 +60,7 @@
 
         #toolbar-panel {
             position: fixed; top: 52px; right: 12px; z-index: 101;
-            width: 270px; max-height: calc(100vh - 80px);
+            width: 290px; max-height: calc(100vh - 80px);
             background: rgba(10, 10, 10, 0.92) !important;
             border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px; display: flex; flex-direction: column; overflow-y: auto;
@@ -125,7 +125,7 @@
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        .slider-group { margin-bottom: 6px; }
+        .slider-group { margin-bottom: 8px; }
         .slider-group label {
             display: flex; justify-content: space-between; font-size: 11px;
             margin-bottom: 4px; align-items: center;
@@ -142,11 +142,14 @@
             outline: none; accent-color: #fff; background: rgba(255,255,255,0.2);
         }
 
-        .number-input-group {
-            display: flex; align-items: center; gap: 8px;
+        .param-row {
+            display: flex; gap: 8px; align-items: center;
         }
-        .number-input-group input[type="number"] {
-            width: 60px; text-align: center;
+        .param-row input[type="range"] {
+            flex: 1;
+        }
+        .param-row input[type="number"] {
+            width: 65px; text-align: center;
         }
 
         .btn-reset {
@@ -279,7 +282,7 @@
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
         <details class="section">
-            <summary>Шансы руд <span style="font-weight:400;text-transform:none;font-size:9px;">(сумма = плотность)</span></summary>
+            <summary>Шансы руд <span style="font-weight:400;text-transform:none;font-size:9px;">(0-100%, сумма = плотность)</span></summary>
             <div id="ore-sliders"></div>
         </details>
         <div class="footer-link">
@@ -518,8 +521,8 @@
             '--roughness-scale': 0.25, '--crack-intensity': 0.5,
             '--fog-density': 0.001, '--vignette-strength': 0.1, '--brightness-mult': 1.5,
             '--tunnel-radius': 0.8,
-            '--chance-coal': 10, '--chance-iron': 5, '--chance-lapis': 3,
-            '--chance-gold': 3, '--chance-redstone': 2, '--chance-diamond': 1, '--chance-emerald': 1
+            '--chance-coal': 40, '--chance-iron': 20, '--chance-lapis': 10,
+            '--chance-gold': 10, '--chance-redstone': 8, '--chance-diamond': 7, '--chance-emerald': 5
         };
 
         var currentSeed = null;
@@ -591,13 +594,13 @@
                 gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 0.8));
                 gl.uniform1f(NU.u_seed, getSeedValue());
                 
-                gl.uniform1f(NU.u_chanceCoal, cssNum('--chance-coal', 10));
-                gl.uniform1f(NU.u_chanceIron, cssNum('--chance-iron', 5));
-                gl.uniform1f(NU.u_chanceLapis, cssNum('--chance-lapis', 3));
-                gl.uniform1f(NU.u_chanceGold, cssNum('--chance-gold', 3));
-                gl.uniform1f(NU.u_chanceRedstone, cssNum('--chance-redstone', 2));
-                gl.uniform1f(NU.u_chanceDiamond, cssNum('--chance-diamond', 1));
-                gl.uniform1f(NU.u_chanceEmerald, cssNum('--chance-emerald', 1));
+                gl.uniform1f(NU.u_chanceCoal, cssNum('--chance-coal', 40));
+                gl.uniform1f(NU.u_chanceIron, cssNum('--chance-iron', 20));
+                gl.uniform1f(NU.u_chanceLapis, cssNum('--chance-lapis', 10));
+                gl.uniform1f(NU.u_chanceGold, cssNum('--chance-gold', 10));
+                gl.uniform1f(NU.u_chanceRedstone, cssNum('--chance-redstone', 8));
+                gl.uniform1f(NU.u_chanceDiamond, cssNum('--chance-diamond', 7));
+                gl.uniform1f(NU.u_chanceEmerald, cssNum('--chance-emerald', 5));
             }
 
             function render(ts) {
@@ -622,7 +625,7 @@
         init();
 
         var cssVars = [
-            ['--speed','Скорость полёта',0.5,8,0.1,2.0],
+            ['--speed','Скорость полёта',0.1,100,0.1,2.0],
             ['--fov','Угол обзора',0.5,3,0.1,1.2],
             ['--max-steps','Дальность прорисовки',10,200,1,100],
             ['--roughness-scale','Рельеф стен',0,0.5,0.01,0.25],
@@ -634,13 +637,13 @@
         ];
 
         var oreChances = [
-            ['--chance-coal','Уголь',10],
-            ['--chance-iron','Железо',5],
-            ['--chance-lapis','Лазурит',3],
-            ['--chance-gold','Золото',3],
-            ['--chance-redstone','Редстоун',2],
-            ['--chance-diamond','Алмазы',1],
-            ['--chance-emerald','Изумруды',1],
+            ['--chance-coal','Уголь',40],
+            ['--chance-iron','Железо',20],
+            ['--chance-lapis','Лазурит',10],
+            ['--chance-gold','Золото',10],
+            ['--chance-redstone','Редстоун',8],
+            ['--chance-diamond','Алмазы',7],
+            ['--chance-emerald','Изумруды',5],
         ];
 
         cssVars.forEach(function(v) {
@@ -652,8 +655,13 @@
 
         var slidersDiv = document.getElementById('sliders');
         cssVars.forEach(function(v) {
-            var g = document.createElement('div'); g.className = 'slider-group';
-            g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
+            var g = document.createElement('div'); 
+            g.className = 'slider-group';
+            g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label>' +
+                          '<div class="param-row">' +
+                          '<input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">' +
+                          '<input type="number" class="param-input" data-css="'+v[0]+'" value="'+v[5]+'" step="'+v[4]+'">' +
+                          '</div>';
             slidersDiv.appendChild(g);
         });
 
@@ -692,23 +700,48 @@
         oreChances.forEach(function(v) {
             var row = document.createElement('div');
             row.className = 'ore-row';
-            row.innerHTML = '<div class="ore-icon" style="background-image:url(assets/'+v[0].replace('--chance-','')+'_ore.png)"></div><span class="ore-label">'+v[1]+'</span><input type="number" class="ore-input" data-css="'+v[0]+'" value="'+v[3]+'" min="0" step="0.1"><span style="font-size:10px;">%</span>';
+            row.innerHTML = '<div class="ore-icon" style="background-image:url(assets/'+v[0].replace('--chance-','')+'_ore.png)"></div><span class="ore-label">'+v[1]+'</span><input type="number" class="ore-input" data-css="'+v[0]+'" value="'+v[3]+'" min="0" max="100" step="0.1"><span style="font-size:10px;">%</span>';
             oreSlidersDiv.appendChild(row);
         });
 
+        // Обработчики для ползунков
         document.querySelectorAll('input[type="range"]').forEach(function(s) {
             s.addEventListener('input', function() {
                 var v = parseFloat(s.value);
                 document.documentElement.style.setProperty(s.dataset.css, v);
                 var valEl = document.getElementById('val'+s.dataset.css);
                 if (valEl) valEl.textContent = v;
+                var numInput = document.querySelector('.param-input[data-css="'+s.dataset.css+'"]');
+                if (numInput) numInput.value = v;
                 updateCssOutput();
             });
         });
 
+        // Обработчики для полей ввода параметров (без лимита)
+        document.querySelectorAll('.param-input').forEach(function(input) {
+            input.addEventListener('input', function() {
+                var v = parseFloat(this.value) || 0;
+                document.documentElement.style.setProperty(this.dataset.css, v);
+                var valEl = document.getElementById('val'+this.dataset.css);
+                if (valEl) valEl.textContent = v;
+                var range = document.querySelector('input[type="range"][data-css="'+this.dataset.css+'"]');
+                if (range) range.value = v;
+                updateCssOutput();
+            });
+        });
+
+        // Обработчики для руд (ограничение 0-100)
         document.querySelectorAll('.ore-input').forEach(function(input) {
             input.addEventListener('input', function() {
                 var v = parseFloat(this.value) || 0;
+                if (v > 100) {
+                    v = 100;
+                    this.value = 100;
+                }
+                if (v < 0) {
+                    v = 0;
+                    this.value = 0;
+                }
                 document.documentElement.style.setProperty(this.dataset.css, v);
                 updateCssOutput();
             });
@@ -717,8 +750,10 @@
         document.getElementById('reset-btn').addEventListener('click', function() {
             cssVars.forEach(function(v) {
                 document.documentElement.style.setProperty(v[0], v[5]);
-                var slider = document.querySelector('input[data-css="'+v[0]+'"]');
+                var slider = document.querySelector('input[type="range"][data-css="'+v[0]+'"]');
                 if (slider) slider.value = v[5];
+                var numInput = document.querySelector('.param-input[data-css="'+v[0]+'"]');
+                if (numInput) numInput.value = v[5];
                 var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
