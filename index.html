@@ -18,13 +18,13 @@
             --roughness-scale: 0.25; --crack-intensity: 0.5;
             --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
             --tunnel-radius: 0.8; --seed-text: "__random__";
-            --chance-coal: 40;
-            --chance-iron: 20;
-            --chance-lapis: 10;
-            --chance-gold: 10;
-            --chance-redstone: 8;
-            --chance-diamond: 7;
-            --chance-emerald: 5;
+            --chance-coal: 8;
+            --chance-iron: 5;
+            --chance-lapis: 3;
+            --chance-gold: 3;
+            --chance-redstone: 3;
+            --chance-diamond: 2;
+            --chance-emerald: 1;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
@@ -48,7 +48,6 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             transition: all 0.3s ease;
             backdrop-filter: blur(4px);
-            box-shadow: none;
         }
         #toolbar-toggle:hover {
             background: rgba(10, 10, 10, 0.9) !important;
@@ -60,7 +59,7 @@
 
         #toolbar-panel {
             position: fixed; top: 52px; right: 12px; z-index: 101;
-            width: 290px; max-height: calc(100vh - 80px);
+            width: 270px; max-height: calc(100vh - 80px);
             background: rgba(10, 10, 10, 0.92) !important;
             border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px; display: flex; flex-direction: column; overflow-y: auto;
@@ -91,17 +90,12 @@
             background: #000 !important;
         }
 
-        #toolbar-panel input[type="text"],
-        #toolbar-panel input[type="number"] {
+        #toolbar-panel input[type="text"] {
             background: rgba(255,255,255,0.1) !important;
             border: 1px solid rgba(255,255,255,0.2);
             color: #fff !important;
             padding: 4px 8px; border-radius: 4px; font-size: 11px;
             width: 100%;
-        }
-        #toolbar-panel input[type="text"]::placeholder,
-        #toolbar-panel input[type="number"]::placeholder {
-            color: rgba(255,255,255,0.4) !important;
         }
 
         .panel-header {
@@ -125,10 +119,10 @@
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        .slider-group { margin-bottom: 8px; }
+        .slider-group { margin-bottom: 6px; }
         .slider-group label {
             display: flex; justify-content: space-between; font-size: 11px;
-            margin-bottom: 4px; align-items: center;
+            margin-bottom: 4px;
         }
         .slider-group .val {
             font-size: 10px; font-weight: 700;
@@ -138,26 +132,12 @@
             width: 100%; height: 4px; accent-color: #fff;
             appearance: none; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none;
         }
-        input[type="range"]:focus, input[type="range"]:active {
-            outline: none; accent-color: #fff; background: rgba(255,255,255,0.2);
-        }
-
-        .param-row {
-            display: flex; gap: 8px; align-items: center;
-        }
-        .param-row input[type="range"] {
-            flex: 1;
-        }
-        .param-row input[type="number"] {
-            width: 65px; text-align: center;
-        }
 
         .btn-reset {
             border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer;
             font-size: 10px; font-weight: 700; transition: all 0.2s;
         }
         .btn-reset:hover { background: #ddd !important; }
-        .btn-reset:active { background: #ddd !important; outline: none; }
 
         .css-output {
             padding: 8px; border-radius: 4px;
@@ -174,7 +154,6 @@
             cursor: pointer; font-weight: 700; transition: all 0.2s;
         }
         .copy-btn:hover { background: #ddd !important; }
-        .copy-btn:active { background: #ddd !important; outline: none; }
         .copy-btn.copied { background: #4caf50 !important; color: #fff !important; }
 
         details.section {
@@ -190,7 +169,6 @@
             margin-bottom: 6px; transition: opacity 0.2s;
         }
         details summary:hover { opacity: 0.8; }
-        details summary:focus, details summary:active { outline: none; }
 
         .ore-row {
             display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
@@ -199,12 +177,17 @@
             width: 20px; height: 20px; border-radius: 3px;
             background-size: cover; image-rendering: pixelated;
             border: 1px solid rgba(255,255,255,0.3);
+            flex-shrink: 0;
         }
         .ore-label {
             flex: 1; font-size: 11px; font-weight: 600;
         }
-        .ore-input {
-            width: 60px; text-align: center;
+        .ore-slider {
+            width: 80px; height: 4px; accent-color: #fff;
+            appearance: none; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none;
+        }
+        .ore-val {
+            font-size: 10px; min-width: 32px; text-align: right; font-weight: 700;
         }
 
         .guide-btn {
@@ -213,7 +196,6 @@
             text-transform: uppercase; letter-spacing: 0.5px;
         }
         .guide-btn:hover { background: #ddd !important; }
-        .guide-btn:active { background: #ddd !important; outline: none; }
 
         .footer-link {
             padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.15);
@@ -282,7 +264,7 @@
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
         <details class="section">
-            <summary>Шансы руд <span style="font-weight:400;text-transform:none;font-size:9px;">(0-100%, сумма = плотность)</span></summary>
+            <summary>Шансы руд <span style="font-weight:400;text-transform:none;font-size:9px;">(0-12.5%, сумма = плотность)</span></summary>
             <div id="ore-sliders"></div>
         </details>
         <div class="footer-link">
@@ -521,8 +503,8 @@
             '--roughness-scale': 0.25, '--crack-intensity': 0.5,
             '--fog-density': 0.001, '--vignette-strength': 0.1, '--brightness-mult': 1.5,
             '--tunnel-radius': 0.8,
-            '--chance-coal': 40, '--chance-iron': 20, '--chance-lapis': 10,
-            '--chance-gold': 10, '--chance-redstone': 8, '--chance-diamond': 7, '--chance-emerald': 5
+            '--chance-coal': 8, '--chance-iron': 5, '--chance-lapis': 3,
+            '--chance-gold': 3, '--chance-redstone': 3, '--chance-diamond': 2, '--chance-emerald': 1
         };
 
         var currentSeed = null;
@@ -594,13 +576,13 @@
                 gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 0.8));
                 gl.uniform1f(NU.u_seed, getSeedValue());
                 
-                gl.uniform1f(NU.u_chanceCoal, cssNum('--chance-coal', 40));
-                gl.uniform1f(NU.u_chanceIron, cssNum('--chance-iron', 20));
-                gl.uniform1f(NU.u_chanceLapis, cssNum('--chance-lapis', 10));
-                gl.uniform1f(NU.u_chanceGold, cssNum('--chance-gold', 10));
-                gl.uniform1f(NU.u_chanceRedstone, cssNum('--chance-redstone', 8));
-                gl.uniform1f(NU.u_chanceDiamond, cssNum('--chance-diamond', 7));
-                gl.uniform1f(NU.u_chanceEmerald, cssNum('--chance-emerald', 5));
+                gl.uniform1f(NU.u_chanceCoal, cssNum('--chance-coal', 8));
+                gl.uniform1f(NU.u_chanceIron, cssNum('--chance-iron', 5));
+                gl.uniform1f(NU.u_chanceLapis, cssNum('--chance-lapis', 3));
+                gl.uniform1f(NU.u_chanceGold, cssNum('--chance-gold', 3));
+                gl.uniform1f(NU.u_chanceRedstone, cssNum('--chance-redstone', 3));
+                gl.uniform1f(NU.u_chanceDiamond, cssNum('--chance-diamond', 2));
+                gl.uniform1f(NU.u_chanceEmerald, cssNum('--chance-emerald', 1));
             }
 
             function render(ts) {
@@ -625,7 +607,7 @@
         init();
 
         var cssVars = [
-            ['--speed','Скорость полёта',0.1,100,0.1,2.0],
+            ['--speed','Скорость полёта',0.5,8,0.1,2.0],
             ['--fov','Угол обзора',0.5,3,0.1,1.2],
             ['--max-steps','Дальность прорисовки',10,200,1,100],
             ['--roughness-scale','Рельеф стен',0,0.5,0.01,0.25],
@@ -637,31 +619,26 @@
         ];
 
         var oreChances = [
-            ['--chance-coal','Уголь',40],
-            ['--chance-iron','Железо',20],
-            ['--chance-lapis','Лазурит',10],
-            ['--chance-gold','Золото',10],
-            ['--chance-redstone','Редстоун',8],
-            ['--chance-diamond','Алмазы',7],
-            ['--chance-emerald','Изумруды',5],
+            ['--chance-coal','Уголь',8],
+            ['--chance-iron','Железо',5],
+            ['--chance-lapis','Лазурит',3],
+            ['--chance-gold','Золото',3],
+            ['--chance-redstone','Редстоун',3],
+            ['--chance-diamond','Алмазы',2],
+            ['--chance-emerald','Изумруды',1],
         ];
 
         cssVars.forEach(function(v) {
             document.documentElement.style.setProperty(v[0], v[5]);
         });
         oreChances.forEach(function(v) {
-            document.documentElement.style.setProperty(v[0], v[3]);
+            document.documentElement.style.setProperty(v[0], v[2]);
         });
 
         var slidersDiv = document.getElementById('sliders');
         cssVars.forEach(function(v) {
-            var g = document.createElement('div'); 
-            g.className = 'slider-group';
-            g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label>' +
-                          '<div class="param-row">' +
-                          '<input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">' +
-                          '<input type="number" class="param-input" data-css="'+v[0]+'" value="'+v[5]+'" step="'+v[4]+'">' +
-                          '</div>';
+            var g = document.createElement('div'); g.className = 'slider-group';
+            g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
             slidersDiv.appendChild(g);
         });
 
@@ -700,49 +677,18 @@
         oreChances.forEach(function(v) {
             var row = document.createElement('div');
             row.className = 'ore-row';
-            row.innerHTML = '<div class="ore-icon" style="background-image:url(assets/'+v[0].replace('--chance-','')+'_ore.png)"></div><span class="ore-label">'+v[1]+'</span><input type="number" class="ore-input" data-css="'+v[0]+'" value="'+v[3]+'" min="0" max="100" step="0.1"><span style="font-size:10px;">%</span>';
+            row.innerHTML = '<div class="ore-icon" style="background-image:url(assets/'+v[0].replace('--chance-','')+'_ore.png)"></div><span class="ore-label">'+v[1]+'</span><input type="range" class="ore-slider" data-css="'+v[0]+'" min="0" max="12.5" step="0.1" value="'+v[2]+'"><span class="ore-val" id="ore-val'+v[0]+'">'+v[2]+'%</span>';
             oreSlidersDiv.appendChild(row);
         });
 
-        // Обработчики для ползунков
         document.querySelectorAll('input[type="range"]').forEach(function(s) {
             s.addEventListener('input', function() {
                 var v = parseFloat(s.value);
                 document.documentElement.style.setProperty(s.dataset.css, v);
                 var valEl = document.getElementById('val'+s.dataset.css);
                 if (valEl) valEl.textContent = v;
-                var numInput = document.querySelector('.param-input[data-css="'+s.dataset.css+'"]');
-                if (numInput) numInput.value = v;
-                updateCssOutput();
-            });
-        });
-
-        // Обработчики для полей ввода параметров (без лимита)
-        document.querySelectorAll('.param-input').forEach(function(input) {
-            input.addEventListener('input', function() {
-                var v = parseFloat(this.value) || 0;
-                document.documentElement.style.setProperty(this.dataset.css, v);
-                var valEl = document.getElementById('val'+this.dataset.css);
-                if (valEl) valEl.textContent = v;
-                var range = document.querySelector('input[type="range"][data-css="'+this.dataset.css+'"]');
-                if (range) range.value = v;
-                updateCssOutput();
-            });
-        });
-
-        // Обработчики для руд (ограничение 0-100)
-        document.querySelectorAll('.ore-input').forEach(function(input) {
-            input.addEventListener('input', function() {
-                var v = parseFloat(this.value) || 0;
-                if (v > 100) {
-                    v = 100;
-                    this.value = 100;
-                }
-                if (v < 0) {
-                    v = 0;
-                    this.value = 0;
-                }
-                document.documentElement.style.setProperty(this.dataset.css, v);
+                var oreValEl = document.getElementById('ore-val'+s.dataset.css);
+                if (oreValEl) oreValEl.textContent = v + '%';
                 updateCssOutput();
             });
         });
@@ -750,18 +696,18 @@
         document.getElementById('reset-btn').addEventListener('click', function() {
             cssVars.forEach(function(v) {
                 document.documentElement.style.setProperty(v[0], v[5]);
-                var slider = document.querySelector('input[type="range"][data-css="'+v[0]+'"]');
+                var slider = document.querySelector('input[data-css="'+v[0]+'"]');
                 if (slider) slider.value = v[5];
-                var numInput = document.querySelector('.param-input[data-css="'+v[0]+'"]');
-                if (numInput) numInput.value = v[5];
                 var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
             
             oreChances.forEach(function(v) {
-                document.documentElement.style.setProperty(v[0], v[3]);
-                var input = document.querySelector('.ore-input[data-css="'+v[0]+'"]');
-                if (input) input.value = v[3];
+                document.documentElement.style.setProperty(v[0], v[2]);
+                var slider = document.querySelector('.ore-slider[data-css="'+v[0]+'"]');
+                if (slider) slider.value = v[2];
+                var oreValEl = document.getElementById('ore-val'+v[0]);
+                if (oreValEl) oreValEl.textContent = v[2] + '%';
             });
             
             seedInput.value = '';
@@ -781,7 +727,7 @@
                 var def = DEFAULTS[key];
                 if (val === '' || isNaN(parseFloat(val))) val = def;
                 if (parseFloat(val) !== def) {
-                    css += '  ' + key + ': ' + val + ';\n';
+                    css += '  ' + key + ': ' + val + ' !important;\n';
                     hasChanges = true;
                 }
             });
@@ -792,14 +738,14 @@
                 var def = DEFAULTS[key];
                 if (val === '' || isNaN(parseFloat(val))) val = def;
                 if (parseFloat(val) !== def) {
-                    css += '  ' + key + ': ' + val + ';\n';
+                    css += '  ' + key + ': ' + val + ' !important;\n';
                     hasChanges = true;
                 }
             });
 
             var seedRaw = seedInput.value.trim();
             if (seedRaw !== '') {
-                css += '  --seed-text: "' + seedRaw + '";\n';
+                css += '  --seed-text: "' + seedRaw + '" !important;\n';
                 hasChanges = true;
             }
             
@@ -809,8 +755,8 @@
             
             css += '}\n';
             css += '#toolbar-toggle, #toolbar-panel, #watermark { display: none !important; }\n';
-            css += 'body { background: #000; overflow: hidden; }\n';
-            css += 'canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }';
+            css += 'body { background: #000 !important; overflow: hidden !important; }\n';
+            css += 'canvas { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; }';
             
             document.getElementById('css-code').textContent = css;
         }
