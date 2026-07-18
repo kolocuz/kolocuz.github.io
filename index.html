@@ -14,7 +14,7 @@
         }
 
         :root {
-            --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-density: 25;
+            --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-density: 10;
             --roughness-scale: 0.25; --crack-intensity: 0.5;
             --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
             --tunnel-radius: 0.8; --seed-text: "__random__";
@@ -357,33 +357,36 @@
             // Плотность руды (0-100)
             if (h * 100.0 > u_stoneDensity) return getTex(uv, -1).rgb;
             
-            // Собираем включенные руды
-            float enabled[7];
-            enabled[0] = u_oreCoal;
-            enabled[1] = u_oreIron;
-            enabled[2] = u_oreLapis;
-            enabled[3] = u_oreGold;
-            enabled[4] = u_oreRedstone;
-            enabled[5] = u_oreDiamond;
-            enabled[6] = u_oreEmerald;
+            // Веса руд
+            float weights[7];
+            weights[0] = u_oreCoal * 3.0;
+            weights[1] = u_oreIron * 3.0;
+            weights[2] = u_oreLapis * 2.0;
+            weights[3] = u_oreGold * 2.0;
+            weights[4] = u_oreRedstone * 2.0;
+            weights[5] = u_oreDiamond * 1.0;
+            weights[6] = u_oreEmerald * 1.0;
             
-            int count = 0;
+            // Сумма весов включённых руд
+            float totalWeight = 0.0;
             for (int i = 0; i < 7; i++) {
-                if (enabled[i] > 0.5) count++;
+                if (weights[i] > 0.5) totalWeight += weights[i];
             }
             
-            if (count == 0) return getTex(uv, -1).rgb;
+            if (totalWeight < 0.01) return getTex(uv, -1).rgb;
             
-            // Выбираем случайную руду из включенных
-            float r = h * float(count);
+            // Выбираем руду по весу
+            float r = h * totalWeight;
+            float accum = 0.0;
             int ore = -1;
+            
             for (int i = 0; i < 7; i++) {
-                if (enabled[i] > 0.5) {
-                    if (r < 1.0) {
+                if (weights[i] > 0.5) {
+                    accum += weights[i];
+                    if (r < accum) {
                         ore = i;
                         break;
                     }
-                    r -= 1.0;
                 }
             }
             
@@ -500,7 +503,7 @@
         }
 
         const DEFAULTS = {
-            '--speed': 2.0, '--fov': 1.2, '--max-steps': 100, '--stone-density': 25,
+            '--speed': 2.0, '--fov': 1.2, '--max-steps': 100, '--stone-density': 10,
             '--roughness-scale': 0.25, '--crack-intensity': 0.5,
             '--fog-density': 0.001, '--vignette-strength': 0.1, '--brightness-mult': 1.5,
             '--tunnel-radius': 0.8,
@@ -567,7 +570,7 @@
                 gl.uniform1f(NU.u_speed, 1.0);
                 gl.uniform1f(NU.u_fov, cssNum('--fov', 1.2));
                 gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps', 100));
-                gl.uniform1f(NU.u_stoneDensity, cssNum('--stone-density', 25));
+                gl.uniform1f(NU.u_stoneDensity, cssNum('--stone-density', 10));
                 gl.uniform1f(NU.u_roughnessScale, cssNum('--roughness-scale', 0.25));
                 gl.uniform1f(NU.u_crackIntensity, cssNum('--crack-intensity', 0.5));
                 gl.uniform1f(NU.u_fogDensity, cssNum('--fog-density', 0.001));
@@ -649,14 +652,12 @@
             updateCssOutput();
         });
 
-        // Ползунок плотности руды
         var oreSlidersDiv = document.getElementById('ore-sliders');
         var densityGroup = document.createElement('div');
         densityGroup.className = 'slider-group';
-        densityGroup.innerHTML = '<label><span>Плотность руды</span><span class="val" id="val--stone-density">25%</span></label><input type="range" id="density-slider" data-css="--stone-density" min="0" max="100" step="1" value="25">';
+        densityGroup.innerHTML = '<label><span>Плотность руды</span><span class="val" id="val--stone-density">10%</span></label><input type="range" id="density-slider" data-css="--stone-density" min="0" max="100" step="1" value="10">';
         oreSlidersDiv.appendChild(densityGroup);
 
-        // Сетка с иконками руд
         var texGrid = document.getElementById('texture-grid');
         var oreState = {};
         oreNames.forEach(function(name) {
@@ -702,9 +703,9 @@
                 var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
-            document.documentElement.style.setProperty('--stone-density', 25);
-            document.getElementById('density-slider').value = 25;
-            document.getElementById('val--stone-density').textContent = '25%';
+            document.documentElement.style.setProperty('--stone-density', 10);
+            document.getElementById('density-slider').value = 10;
+            document.getElementById('val--stone-density').textContent = '10%';
             oreNames.forEach(function(name) {
                 oreState[name] = 1;
                 document.documentElement.style.setProperty('--ore-'+name, 1);
@@ -734,7 +735,7 @@
             });
 
             var density = style.getPropertyValue('--stone-density').trim();
-            if (density && parseInt(density) !== 25) {
+            if (density && parseInt(density) !== 10) {
                 css += '  --stone-density: ' + density + ' !important;\n';
                 hasChanges = true;
             }
