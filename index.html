@@ -7,18 +7,17 @@
     <meta http-equiv="color-scheme" content="only light">
     <title>Minecraft Shader</title>
     <style>
-        /* Стили идентичны оригиналу, добавлено только для .ore-item и .disabled */
         html, body, #toolbar-panel, #toolbar-panel *, #toolbar-toggle, #watermark, #guide-modal, .guide-modal-content {
             color-scheme: only light !important;
             forced-color-adjust: none !important;
             -webkit-text-fill-color: currentColor !important;
         }
+
         :root {
-            --speed: 2.0; --fov: 1.2; --max-steps: 100;
+            --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-density: 25;
             --roughness-scale: 0.25; --crack-intensity: 0.5;
             --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
             --tunnel-radius: 0.8; --seed-text: "__random__";
-            --stone-density: 25; /* общий процент руды */
             --ore-coal: 1; --ore-iron: 1; --ore-lapis: 1; --ore-gold: 1;
             --ore-redstone: 1; --ore-diamond: 1; --ore-emerald: 1;
         }
@@ -28,94 +27,308 @@
 
         #watermark {
             position: fixed; bottom: 16px; left: 16px; z-index: 50;
-            font-size: 12px; color: rgba(255,255,255,0.4) !important;
+            font-size: 12px; pointer-events: auto; user-select: none;
+            color: rgba(255,255,255,0.4) !important;
         }
-        #watermark a { color: inherit; text-decoration: none; }
+        #watermark a { color: rgba(255,255,255,0.4) !important; text-decoration: none; }
+        #watermark a:hover { color: rgba(255,255,255,0.8) !important; }
+
         #toolbar-toggle {
             position: fixed; top: 12px; right: 12px; z-index: 100;
             width: 36px; height: 36px; border-radius: 6px;
-            background: rgba(10,10,10,0.5); border: 2px solid rgba(255,255,255,0.25);
-            color: rgba(255,255,255,0.5); font-size: 18px;
+            background: rgba(10, 10, 10, 0.5) !important;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.5) !important;
+            font-size: 18px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: all 0.3s ease;
             backdrop-filter: blur(4px);
         }
-        #toolbar-toggle:hover { background: rgba(10,10,10,0.9); border-color: #fff; color: #fff; }
+        #toolbar-toggle:hover {
+            background: rgba(10, 10, 10, 0.9) !important;
+            border-color: #fff;
+            color: #fff !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(255,255,255,0.2);
+        }
+
         #toolbar-panel {
             position: fixed; top: 52px; right: 12px; z-index: 101;
             width: 270px; max-height: calc(100vh - 80px);
-            background: rgba(10,10,10,0.92); border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(10, 10, 10, 0.92) !important;
+            border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px; display: flex; flex-direction: column; overflow-y: auto;
             opacity: 0; visibility: hidden; transform: translateY(-6px);
             transition: opacity 0.25s, visibility 0.25s, transform 0.25s;
-            font-size: 12px; padding: 0; color: #fff;
+            font-size: 12px; padding: 0;
+            box-shadow: 0 0 40px rgba(0,0,0,0.9), 0 8px 30px rgba(0,0,0,0.8);
+            color: #fff !important;
             backdrop-filter: blur(12px);
         }
         #toolbar-panel.open { opacity: 1; visibility: visible; transform: translateY(0); }
-        #toolbar-panel .section { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .panel-header { display: flex; justify-content: space-between; padding: 12px 16px; font-weight: 700; }
-        .btn-reset, .copy-btn, .guide-btn, .slider-group .val { background: #fff !important; color: #000 !important; }
-        .slider-group { margin-bottom: 8px; }
-        .slider-group label { display: flex; justify-content: space-between; font-size: 11px; }
-        .slider-group .val { padding: 2px 8px; border-radius: 4px; font-weight: 700; }
-        .slider-group input[type="range"] { width: 100%; accent-color: #fff; }
-        .ore-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-        .ore-item {
-            aspect-ratio: 1; border-radius: 6px; background-size: cover;
-            image-rendering: pixelated; cursor: pointer; border: 2px solid rgba(255,255,255,0.3);
-            position: relative; display: flex; align-items: center; justify-content: center;
-            font-size: 24px; color: transparent; transition: 0.2s;
+        #toolbar-panel::-webkit-scrollbar { width: 3px; }
+        #toolbar-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 2px; }
+
+        #toolbar-panel * { color: #fff !important; }
+
+        #toolbar-panel .btn-reset,
+        #toolbar-panel .copy-btn,
+        #toolbar-panel .guide-btn,
+        #toolbar-panel .slider-group .val {
+            background: #fff !important;
+            color: #000 !important;
         }
-        .ore-item:hover { border-color: #fff; }
-        .ore-item.disabled { opacity: 0.4; border-color: #f44; }
-        .ore-item.disabled::after { content: "✕"; color: #f44; position: absolute; font-size: 28px; }
-        .css-output { background: #000; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 9px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; }
-        .guide-btn { border: none; padding: 8px; border-radius: 5px; width: 100%; font-weight: 700; cursor: pointer; }
-        .footer-link { padding: 10px; text-align: center; }
-        #guide-modal { /* ... такой же как раньше ... */ }
+
+        #toolbar-panel .css-output,
+        #toolbar-panel .css-output * {
+            color: #0f0 !important;
+            background: #000 !important;
+        }
+
+        #toolbar-panel input[type="text"] {
+            background: rgba(255,255,255,0.1) !important;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff !important;
+            padding: 4px 8px; border-radius: 4px; font-size: 11px;
+            width: 100%;
+        }
+
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px; font-weight: 700; font-size: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+        .panel-header button {
+            background: none !important; border: none; font-size: 18px;
+            cursor: pointer; padding: 0 4px; line-height: 1; transition: opacity 0.2s;
+        }
+        .panel-header button:hover { opacity: 0.7; }
+
+        .section {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .section-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; margin-bottom: 10px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .slider-group { margin-bottom: 6px; }
+        .slider-group label {
+            display: flex; justify-content: space-between; font-size: 11px;
+            margin-bottom: 4px;
+        }
+        .slider-group .val {
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 4px;
+        }
+        .slider-group input[type="range"] {
+            width: 100%; height: 4px; accent-color: #fff;
+            appearance: none; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none;
+        }
+
+        .btn-reset {
+            border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer;
+            font-size: 10px; font-weight: 700; transition: all 0.2s;
+        }
+        .btn-reset:hover { background: #ddd !important; }
+
+        .css-output {
+            padding: 8px; border-radius: 4px;
+            font-family: monospace; font-size: 9px;
+            max-height: 120px; overflow-y: auto; white-space: pre-wrap;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .css-output-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .copy-btn {
+            border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px;
+            cursor: pointer; font-weight: 700; transition: all 0.2s;
+        }
+        .copy-btn:hover { background: #ddd !important; }
+        .copy-btn.copied { background: #4caf50 !important; color: #fff !important; }
+
+        details.section {
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.03);
+            border-left: 3px solid #fff;
+            margin: 0;
+        }
+        details.section[open] { background: rgba(255,255,255,0.05); }
+        details summary {
+            cursor: pointer; outline: none; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 6px; transition: opacity 0.2s;
+        }
+        details summary:hover { opacity: 0.8; }
+
+        .texture-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
+        }
+        .texture-item {
+            position: relative; aspect-ratio: 1;
+            border: 2px solid rgba(255,255,255,0.2); border-radius: 5px;
+            background-size: cover; background-position: center;
+            image-rendering: pixelated; background-color: #111;
+            cursor: pointer; transition: all 0.2s; overflow: hidden;
+        }
+        .texture-item:hover { border-color: #fff; transform: scale(1.05); }
+        .texture-item.disabled {
+            opacity: 0.5; border-color: #f33 !important;
+            box-shadow: inset 0 0 20px rgba(255,0,0,0.3);
+        }
+        .texture-item .crosshair {
+            position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; pointer-events: none;
+            font-size: 34px; color: transparent; transition: color 0.2s;
+        }
+        .texture-item:hover .crosshair {
+            color: rgba(255,255,255,0.5);
+        }
+        .texture-item.disabled .crosshair {
+            color: #f00;
+        }
+        .texture-label {
+            position: absolute; bottom: 3px; left: 5px;
+            font-size: 9px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 3px;
+            pointer-events: none;
+        }
+
+        .guide-btn {
+            border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer;
+            font-size: 11px; font-weight: 700; width: 100%; transition: all 0.2s;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .guide-btn:hover { background: #ddd !important; }
+
+        .footer-link {
+            padding: 10px 16px; border-top: 1px solid rgba(255,255,255,0.15);
+            text-align: center;
+        }
+        .footer-link a {
+            font-size: 11px; text-decoration: none;
+            font-weight: 600; transition: opacity 0.2s;
+        }
+        .footer-link a:hover { opacity: 0.7; }
+
+        #guide-modal {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+        }
+        .guide-modal-content {
+            position: relative; max-width: 650px; width: 90vw; max-height: 85vh;
+            background: #0a0a0a !important; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 24px; overflow-y: auto; font-size: 14px; line-height: 1.7;
+            color: #fff !important;
+        }
+        .guide-modal-content * { color: #fff !important; }
+        .guide-modal-content code { color: #000 !important; background: #fff !important; }
+        .guide-modal-close {
+            position: absolute; top: 12px; right: 12px;
+            width: 28px; height: 28px; border-radius: 4px;
+            background: #fff !important; border: none;
+            color: #000 !important; font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; transition: background 0.2s;
+        }
+        .guide-modal-close:hover { background: #ddd !important; }
     </style>
 </head>
 <body>
     <canvas id="c"></canvas>
+
     <div id="watermark"><a href="https://kolocuz.github.io" target="_blank">kolocuz.github.io</a></div>
+
     <button id="toolbar-toggle" title="Настройки шейдера">⚙</button>
     <div id="toolbar-panel">
-        <div class="panel-header"><span>Шейдер</span><button id="toolbar-close">✕</button></div>
+        <div class="panel-header">
+            <span>Шейдер</span>
+            <button id="toolbar-close" title="Закрыть">✕</button>
+        </div>
         <div class="section">
-            <div class="section-title"><span>Параметры</span><button class="btn-reset" id="reset-btn">Сброс</button></div>
+            <div class="section-title">
+                <span>Параметры</span>
+                <button class="btn-reset" id="reset-btn">Сброс</button>
+            </div>
             <div id="sliders"></div>
         </div>
         <div class="section">
-            <div class="css-output-header"><span>CSS для OBS</span><button class="copy-btn" id="copy-css-btn">Копировать</button></div>
-            <div class="css-output" id="css-output"><code id="css-code"></code></div>
-        </div>
-        <div class="section"><button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button></div>
-        <details class="section">
-            <summary>Руды <span style="font-weight:400;">(клик — вкл/выкл)</span></summary>
-            <div class="slider-group">
-                <label><span>Плотность руды</span><span class="val" id="val--stone-density">25%</span></label>
-                <input type="range" id="density-slider" min="0" max="100" value="25" step="1">
+            <div class="css-output-header">
+                <span class="section-title" style="margin-bottom:0;">CSS для OBS</span>
+                <button class="copy-btn" id="copy-css-btn">Копировать</button>
             </div>
-            <div class="ore-grid" id="ore-grid"></div>
+            <div class="css-output" id="css-output">
+                <code id="css-code"></code>
+            </div>
+        </div>
+        <div class="section" style="text-align:center;">
+            <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
+        </div>
+        <details class="section">
+            <summary>Руды <span style="font-weight:400;text-transform:none;font-size:9px;">(клик — вкл/выкл)</span></summary>
+            <div id="ore-sliders"></div>
+            <div class="texture-grid" id="texture-grid"></div>
         </details>
-        <div class="footer-link"><a href="https://github.com/kolocuz/kolocuz.github.io" target="_blank">github.com/kolocuz</a></div>
+        <div class="footer-link">
+            <a href="https://github.com/kolocuz/kolocuz.github.io" target="_blank">github.com/kolocuz</a>
+        </div>
     </div>
 
-    <!-- Модальное окно гайда (сокращено) -->
-    <div id="guide-modal"><div class="guide-modal-content"><button class="guide-modal-close">✕</button><h3>Как добавить в OBS</h3><p>1. Настройте шейдер.<br>2. Источник «Браузер».<br>3. URL: <code>https://kolocuz.github.io</code><br>4. Вставьте CSS из панели.</p></div></div>
+    <div id="guide-modal">
+        <div class="guide-modal-content">
+            <button class="guide-modal-close" id="guide-close">✕</button>
+            <h3 style="margin-bottom:16px;font-size:18px;">Как добавить в OBS</h3>
+            <p><b>1.</b> Настройте шейдер под себя с помощью ползунков в панели.</p>
+            <p style="margin-top:12px;"><b>2.</b> В OBS добавьте источник <b>«Браузер»</b>.</p>
+            <p style="margin-top:12px;"><b>3.</b> В поле <b>URL</b> вставьте адрес сайта:</p>
+            <code style="padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;">https://kolocuz.github.io</code>
+            <p style="margin-top:14px;"><b>4.</b> Скопируйте <b>CSS для OBS</b> из панели и вставьте в поле <b>«CSS»</b>:</p>
+        </div>
+    </div>
 
     <script id="vs" type="x-shader/x-vertex">
         attribute vec2 position;
         void main() { gl_Position = vec4(position, 0.0, 1.0); }
     </script>
+
     <script id="fs" type="x-shader/x-fragment">
         precision highp float;
         uniform float time;
         uniform vec2 resolution;
-        uniform float u_speed, u_fov, u_maxSteps, u_roughnessScale, u_crackIntensity;
-        uniform float u_fogDensity, u_vignetteStrength, u_brightnessMult, u_tunnelRadius, u_seed;
-        uniform sampler2D stone, coal_ore, iron_ore, lapis_ore, gold_ore, redstone_ore, diamond_ore, emerald_ore;
-        uniform float u_stoneDensity; // 0..100
-        uniform float u_oreCoal, u_oreIron, u_oreLapis, u_oreGold, u_oreRedstone, u_oreDiamond, u_oreEmerald;
+        uniform float u_speed;
+        uniform float u_fov;
+        uniform float u_maxSteps;
+        uniform float u_roughnessScale;
+        uniform float u_crackIntensity;
+        uniform float u_fogDensity;
+        uniform float u_vignetteStrength;
+        uniform float u_brightnessMult;
+        uniform float u_tunnelRadius;
+        uniform float u_seed;
+        uniform sampler2D stone;
+        uniform sampler2D coal_ore;
+        uniform sampler2D iron_ore;
+        uniform sampler2D lapis_ore;
+        uniform sampler2D gold_ore;
+        uniform sampler2D redstone_ore;
+        uniform sampler2D diamond_ore;
+        uniform sampler2D emerald_ore;
+        uniform float u_stoneDensity;
+        uniform float u_oreCoal;
+        uniform float u_oreIron;
+        uniform float u_oreLapis;
+        uniform float u_oreGold;
+        uniform float u_oreRedstone;
+        uniform float u_oreDiamond;
+        uniform float u_oreEmerald;
 
         float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 
@@ -127,6 +340,7 @@
         }
 
         vec4 getTex(vec2 uv, int t) {
+            if(t<0) return texture2D(stone,uv);
             if(t==0) return texture2D(coal_ore,uv);
             if(t==1) return texture2D(iron_ore,uv);
             if(t==2) return texture2D(lapis_ore,uv);
@@ -134,15 +348,16 @@
             if(t==4) return texture2D(redstone_ore,uv);
             if(t==5) return texture2D(diamond_ore,uv);
             if(t==6) return texture2D(emerald_ore,uv);
-            return texture2D(stone,uv);
+            return vec4(1,0,1,1);
         }
 
         vec3 getBlock(vec3 id, vec2 uv) {
             float h = hash(id);
-            // Плотность руды: u_stoneDensity от 0 до 100
-            if (h * 100.0 > u_stoneDensity) return getTex(uv, -1).rgb; // камень
-
-            // Собираем включённые руды
+            
+            // Плотность руды (0-100)
+            if (h * 100.0 > u_stoneDensity) return getTex(uv, -1).rgb;
+            
+            // Собираем включенные руды
             float enabled[7];
             enabled[0] = u_oreCoal;
             enabled[1] = u_oreIron;
@@ -151,43 +366,60 @@
             enabled[4] = u_oreRedstone;
             enabled[5] = u_oreDiamond;
             enabled[6] = u_oreEmerald;
-
+            
             int count = 0;
-            for (int i=0; i<7; i++) if (enabled[i] > 0.5) count++;
-
-            if (count == 0) return getTex(uv, -1).rgb; // все выключены — камень
-
-            // Выбираем случайную руду из включённых (равномерно)
+            for (int i = 0; i < 7; i++) {
+                if (enabled[i] > 0.5) count++;
+            }
+            
+            if (count == 0) return getTex(uv, -1).rgb;
+            
+            // Выбираем случайную руду из включенных
             float r = h * float(count);
-            int idx = -1;
-            for (int i=0; i<7; i++) {
+            int ore = -1;
+            for (int i = 0; i < 7; i++) {
                 if (enabled[i] > 0.5) {
-                    if (r < 1.0) { idx = i; break; }
+                    if (r < 1.0) {
+                        ore = i;
+                        break;
+                    }
                     r -= 1.0;
                 }
             }
-            if (idx < 0) return getTex(uv, -1).rgb;
-            return mix(getTex(uv, -1).rgb, getTex(uv, idx).rgb, 1.0);
+            
+            if (ore < 0) return getTex(uv, -1).rgb;
+            return mix(getTex(uv, -1).rgb, getTex(uv, ore).rgb, 1.0);
         }
 
-        // ... функции P1, P2, P3, map, main без изменений ...
         vec3 P1(float z) { return vec3(sin(z*0.2)*3.0,cos(z*0.3)*2.0,z); }
+
         vec3 P2(float z) {
             float s = u_seed * 4294967295.0;
-            return vec3(sin(z*0.2) + sin(z*0.07 + s*0.001)*0.5, cos(z*0.3)*4.0-1.0 + cos(z*0.08 + s*0.002)*0.5, z);
+            float offset1 = sin(z * 0.07 + s * 0.001) * 0.5;
+            float offset2 = cos(z * 0.08 + s * 0.002) * 0.5;
+            return vec3(sin(z*0.2) + offset1, cos(z*0.3)*4.0-1.0 + offset2, z);
         }
+
         vec3 P3(float z) {
             float s = u_seed * 4294967295.0;
-            return vec3(sin(z*0.3)*3.0 + cos(z*0.09 + s*0.003)*0.6, cos(z*0.2)*1.0-1.0 + sin(z*0.06 + s*0.004)*0.6, z);
+            float offset1 = cos(z * 0.09 + s * 0.003) * 0.6;
+            float offset2 = sin(z * 0.06 + s * 0.004) * 0.6;
+            return vec3(sin(z*0.3)*3.0 + offset1, cos(z*0.2)*1.0-1.0 + offset2, z);
         }
+
         float map(vec3 p) {
             float d1=length(p-P1(p.z)), d2=length(p-P2(p.z)), d3=length(p-P3(p.z));
             float bd=u_tunnelRadius-min(d1,min(d2,d3));
             if(bd>2.0) return bd;
             float sm=smoothstep(0.0,0.4,abs(bd));
-            float sd=bd + noise(p*6.0)*u_roughnessScale*sm + u_crackIntensity*(-0.7)*step(noise(p*1.5), u_crackIntensity*0.5)*sm;
+            float crackDepth = u_crackIntensity * -0.7;
+            float crackChance = u_crackIntensity * 0.5;
+            float sd=bd;
+            sd+=noise(p*6.0)*u_roughnessScale*sm;
+            sd+=crackDepth*step(noise(p*1.5),crackChance)*sm;
             return sd;
         }
+
         void main() {
             vec2 uv=(gl_FragCoord.xy-resolution.xy*0.5)/resolution.y;
             float t=time*u_speed;
@@ -228,25 +460,31 @@
             const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
             return val ? parseFloat(val) : fallback;
         }
+
         function hashString(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            var hash = 0;
+            for (var i = 0; i < str.length; i++) {
+                var char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
                 hash = hash & hash;
             }
             return hash >>> 0;
         }
+
         function loadTexture(url, slotIndex) {
-            return new Promise(resolve => {
-                const img = new Image();
-                img.onload = () => {
-                    const cn = document.createElement('canvas');
-                    cn.width = img.width; cn.height = img.height;
-                    const cx = cn.getContext('2d');
-                    cx.translate(0, img.height); cx.scale(1, -1);
+            return new Promise(function(resolve) {
+                var img = new Image();
+                img.onload = function() {
+                    var cn = document.createElement('canvas');
+                    cn.width = img.width;
+                    cn.height = img.height;
+                    var cx = cn.getContext('2d');
+                    cx.translate(0, img.height);
+                    cx.scale(1, -1);
                     cx.drawImage(img, 0, 0);
+                    
                     gl.activeTexture(gl.TEXTURE0 + slotIndex);
-                    const tex = gl.createTexture();
+                    var tex = gl.createTexture();
                     gl.bindTexture(gl.TEXTURE_2D, tex);
                     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cn);
                     gl.generateMipmap(gl.TEXTURE_2D);
@@ -256,55 +494,61 @@
                     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
                     resolve(tex);
                 };
-                img.onerror = () => resolve(null);
+                img.onerror = function() { resolve(null); };
                 img.src = url;
             });
         }
 
         const DEFAULTS = {
-            '--speed': 2.0, '--fov': 1.2, '--max-steps': 100,
+            '--speed': 2.0, '--fov': 1.2, '--max-steps': 100, '--stone-density': 25,
             '--roughness-scale': 0.25, '--crack-intensity': 0.5,
             '--fog-density': 0.001, '--vignette-strength': 0.1, '--brightness-mult': 1.5,
             '--tunnel-radius': 0.8,
-            '--stone-density': 25,
             '--ore-coal': 1, '--ore-iron': 1, '--ore-lapis': 1, '--ore-gold': 1,
             '--ore-redstone': 1, '--ore-diamond': 1, '--ore-emerald': 1
         };
 
-        let currentSeed = null;
+        var currentSeed = null;
 
         async function init() {
-            const vs = gl.createShader(gl.VERTEX_SHADER);
+            var vs = gl.createShader(gl.VERTEX_SHADER);
             gl.shaderSource(vs, document.getElementById('vs').textContent);
             gl.compileShader(vs);
-            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+
+            var fs = gl.createShader(gl.FRAGMENT_SHADER);
             gl.shaderSource(fs, document.getElementById('fs').textContent);
             gl.compileShader(fs);
+
             if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-                document.body.innerHTML = '<pre style="color:red">' + gl.getShaderInfoLog(fs) + '</pre>';
+                document.body.innerHTML = '<pre style="color:red;padding:20px;">' + gl.getShaderInfoLog(fs) + '</pre>';
                 return;
             }
-            const program = gl.createProgram();
+
+            var program = gl.createProgram();
             gl.attachShader(program, vs); gl.attachShader(program, fs);
             gl.linkProgram(program); gl.useProgram(program);
 
-            const buf = gl.createBuffer();
+            var buf = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, buf);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
-            const pos = gl.getAttribLocation(program, 'position');
+            var pos = gl.getAttribLocation(program, 'position');
             gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
 
-            const NU = {};
-            ['u_speed','u_fov','u_maxSteps','u_roughnessScale','u_crackIntensity',
-             'u_fogDensity','u_vignetteStrength','u_brightnessMult','u_tunnelRadius','u_seed',
-             'u_stoneDensity','u_oreCoal','u_oreIron','u_oreLapis','u_oreGold',
-             'u_oreRedstone','u_oreDiamond','u_oreEmerald'].forEach(n => NU[n] = gl.getUniformLocation(program, n));
-            const uTime = gl.getUniformLocation(program, 'time');
-            const uRes = gl.getUniformLocation(program, 'resolution');
+            var NU = {};
+            ['u_speed','u_fov','u_maxSteps','u_stoneDensity',
+             'u_roughnessScale','u_crackIntensity','u_fogDensity','u_vignetteStrength',
+             'u_brightnessMult','u_tunnelRadius','u_seed',
+             'u_oreCoal','u_oreIron','u_oreLapis','u_oreGold','u_oreRedstone','u_oreDiamond','u_oreEmerald'
+            ].forEach(function(n) {
+                NU[n] = gl.getUniformLocation(program, n);
+            });
+            var uTime = gl.getUniformLocation(program, 'time');
+            var uRes = gl.getUniformLocation(program, 'resolution');
 
-            const texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
-            for (let i = 0; i < texNames.length; i++) {
-                const loc = gl.getUniformLocation(program, texNames[i]);
+            var texNames = ['stone','coal_ore','iron_ore','lapis_ore','gold_ore','redstone_ore','diamond_ore','emerald_ore'];
+            
+            for (var i = 0; i < texNames.length; i++) {
+                var loc = gl.getUniformLocation(program, texNames[i]);
                 if (loc) gl.uniform1i(loc, i);
                 await loadTexture('assets/' + texNames[i] + '.png', i);
             }
@@ -316,12 +560,14 @@
             }
             window.addEventListener('resize', resize); resize();
 
-            let timeAccum = 0, lastTs = 0;
+            var timeAccum = 0;
+            var lastTs = 0;
 
             function updateUniforms() {
                 gl.uniform1f(NU.u_speed, 1.0);
                 gl.uniform1f(NU.u_fov, cssNum('--fov', 1.2));
                 gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps', 100));
+                gl.uniform1f(NU.u_stoneDensity, cssNum('--stone-density', 25));
                 gl.uniform1f(NU.u_roughnessScale, cssNum('--roughness-scale', 0.25));
                 gl.uniform1f(NU.u_crackIntensity, cssNum('--crack-intensity', 0.5));
                 gl.uniform1f(NU.u_fogDensity, cssNum('--fog-density', 0.001));
@@ -329,7 +575,6 @@
                 gl.uniform1f(NU.u_brightnessMult, cssNum('--brightness-mult', 1.5));
                 gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 0.8));
                 gl.uniform1f(NU.u_seed, getSeedValue());
-                gl.uniform1f(NU.u_stoneDensity, cssNum('--stone-density', 25));
                 gl.uniform1f(NU.u_oreCoal, cssNum('--ore-coal', 1));
                 gl.uniform1f(NU.u_oreIron, cssNum('--ore-iron', 1));
                 gl.uniform1f(NU.u_oreLapis, cssNum('--ore-lapis', 1));
@@ -341,10 +586,12 @@
 
             function render(ts) {
                 if (lastTs === 0) lastTs = ts;
-                const dt = (ts - lastTs) * 0.001;
+                var dt = (ts - lastTs) * 0.001;
                 lastTs = ts;
-                const speed = cssNum('--speed', 2);
+                
+                var speed = cssNum('--speed', 2);
                 timeAccum += dt * speed;
+                
                 gl.uniform1f(uTime, timeAccum);
                 gl.uniform2f(uRes, canvas.width, canvas.height);
                 updateUniforms();
@@ -356,8 +603,7 @@
 
         init();
 
-        // Строим интерфейс
-        const cssVars = [
+        var cssVars = [
             ['--speed','Скорость полёта',0.5,8,0.1,2.0],
             ['--fov','Угол обзора',0.5,3,0.1,1.2],
             ['--max-steps','Дальность прорисовки',10,200,1,100],
@@ -368,100 +614,223 @@
             ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
             ['--tunnel-radius','Ширина тоннеля',0.8,1.5,0.01,0.8],
         ];
-        const slidersDiv = document.getElementById('sliders');
-        cssVars.forEach(v => {
-            const g = document.createElement('div'); g.className = 'slider-group';
-            g.innerHTML = `<label><span>${v[1]}</span><span class="val" id="val${v[0]}">${v[5]}</span></label>
-                           <input type="range" data-css="${v[0]}" min="${v[2]}" max="${v[3]}" step="${v[4]}" value="${v[5]}">`;
+
+        var oreNames = ['coal','iron','lapis','gold','redstone','diamond','emerald'];
+
+        var slidersDiv = document.getElementById('sliders');
+        cssVars.forEach(function(v) {
+            var g = document.createElement('div'); g.className = 'slider-group';
+            g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
             slidersDiv.appendChild(g);
         });
-        // Сид
-        const seedGroup = document.createElement('div'); seedGroup.className = 'slider-group';
-        seedGroup.innerHTML = '<label><span>Сид тоннеля</span></label><input type="text" id="seed-input" placeholder="случайный" style="width:100%;">';
+
+        var seedGroup = document.createElement('div');
+        seedGroup.className = 'slider-group';
+        seedGroup.innerHTML = '<label><span>Сид тоннеля</span></label><input type="text" data-css="--seed-text" placeholder="случайный">';
         slidersDiv.appendChild(seedGroup);
 
-        // Плотность руды
-        const densitySlider = document.getElementById('density-slider');
-        densitySlider.addEventListener('input', () => {
-            document.documentElement.style.setProperty('--stone-density', densitySlider.value);
-            document.getElementById('val--stone-density').textContent = densitySlider.value + '%';
+        var seedInput = document.querySelector('input[data-css="--seed-text"]');
+
+        function getSeedValue() {
+            var raw = seedInput.value.trim();
+            if (raw === '') {
+                if (!currentSeed) currentSeed = Math.random();
+                return currentSeed;
+            }
+            currentSeed = hashString(raw) / 4294967295;
+            return currentSeed;
+        }
+
+        seedInput.addEventListener('input', function() {
+            var val = this.value.trim();
+            document.documentElement.style.setProperty('--seed-text', '"' + (val || '__random__') + '"');
+            if (val === '') currentSeed = Math.random();
+            else currentSeed = hashString(val) / 4294967295;
             updateCssOutput();
         });
 
-        // Сетка руд
-        const oreNames = ['coal','iron','lapis','gold','redstone','diamond','emerald'];
-        const oreGrid = document.getElementById('ore-grid');
-        oreNames.forEach(name => {
-            const item = document.createElement('div');
-            item.className = 'ore-item';
-            item.style.backgroundImage = `url(assets/${name}_ore.png)`;
+        // Ползунок плотности руды
+        var oreSlidersDiv = document.getElementById('ore-sliders');
+        var densityGroup = document.createElement('div');
+        densityGroup.className = 'slider-group';
+        densityGroup.innerHTML = '<label><span>Плотность руды</span><span class="val" id="val--stone-density">25%</span></label><input type="range" id="density-slider" data-css="--stone-density" min="0" max="100" step="1" value="25">';
+        oreSlidersDiv.appendChild(densityGroup);
+
+        // Сетка с иконками руд
+        var texGrid = document.getElementById('texture-grid');
+        var oreState = {};
+        oreNames.forEach(function(name) {
+            oreState[name] = 1;
+            var item = document.createElement('div'); 
+            item.className = 'texture-item';
             item.dataset.ore = name;
-            const enabled = cssNum('--ore-' + name, 1) >= 1;
-            if (!enabled) item.classList.add('disabled');
-            item.addEventListener('click', () => {
-                item.classList.toggle('disabled');
-                const val = item.classList.contains('disabled') ? 0 : 1;
-                document.documentElement.style.setProperty('--ore-' + name, val);
+            item.style.backgroundImage = 'url(assets/'+name+'_ore.png)';
+            var cross = document.createElement('div');
+            cross.className = 'crosshair';
+            cross.textContent = '✕';
+            item.appendChild(cross);
+            var label = document.createElement('div');
+            label.className = 'texture-label';
+            label.textContent = name;
+            item.appendChild(label);
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var ore = this.dataset.ore;
+                oreState[ore] = oreState[ore] === 1 ? 0 : 1;
+                this.classList.toggle('disabled', oreState[ore] === 0);
+                document.documentElement.style.setProperty('--ore-'+ore, oreState[ore]);
                 updateCssOutput();
             });
-            oreGrid.appendChild(item);
+            texGrid.appendChild(item);
         });
 
-        // Обработчики ползунков
-        document.querySelectorAll('input[type="range"]').forEach(s => {
-            s.addEventListener('input', () => {
-                const v = parseFloat(s.value);
+        document.querySelectorAll('input[type="range"]').forEach(function(s) {
+            s.addEventListener('input', function() {
+                var v = parseFloat(s.value);
                 document.documentElement.style.setProperty(s.dataset.css, v);
-                const valEl = document.getElementById('val' + s.dataset.css);
-                if (valEl) valEl.textContent = v;
+                var valEl = document.getElementById('val'+s.dataset.css);
+                if (valEl) valEl.textContent = s.id === 'density-slider' ? v + '%' : v;
                 updateCssOutput();
             });
         });
 
-        // Сброс
-        document.getElementById('reset-btn').addEventListener('click', () => {
-            cssVars.forEach(v => {
+        document.getElementById('reset-btn').addEventListener('click', function() {
+            cssVars.forEach(function(v) {
                 document.documentElement.style.setProperty(v[0], v[5]);
-                const slider = document.querySelector(`input[data-css="${v[0]}"]`);
+                var slider = document.querySelector('input[data-css="'+v[0]+'"]');
                 if (slider) slider.value = v[5];
-                const valEl = document.getElementById('val' + v[0]);
+                var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
-            document.documentElement.style.setProperty('--stone-density', DEFAULTS['--stone-density']);
-            densitySlider.value = DEFAULTS['--stone-density'];
-            document.getElementById('val--stone-density').textContent = DEFAULTS['--stone-density'] + '%';
-            oreNames.forEach(name => {
-                document.documentElement.style.setProperty('--ore-' + name, 1);
-                const item = oreGrid.querySelector(`[data-ore="${name}"]`);
+            document.documentElement.style.setProperty('--stone-density', 25);
+            document.getElementById('density-slider').value = 25;
+            document.getElementById('val--stone-density').textContent = '25%';
+            oreNames.forEach(function(name) {
+                oreState[name] = 1;
+                document.documentElement.style.setProperty('--ore-'+name, 1);
+                var item = texGrid.querySelector('.texture-item[data-ore="'+name+'"]');
                 if (item) item.classList.remove('disabled');
             });
-            document.getElementById('seed-input').value = '';
+            seedInput.value = '';
             currentSeed = Math.random();
+            document.documentElement.style.setProperty('--seed-text', '"__random__"');
             updateCssOutput();
         });
 
-        // Генерация CSS
         function updateCssOutput() {
-            let css = ':root {\n';
-            const style = getComputedStyle(document.documentElement);
-            cssVars.forEach(v => {
-                const val = style.getPropertyValue(v[0]).trim();
-                if (val && parseFloat(val) !== DEFAULTS[v[0]]) css += `  ${v[0]}: ${val} !important;\n`;
+            var css = ':root {\n';
+            var hasChanges = false;
+            var style = getComputedStyle(document.documentElement);
+            
+            cssVars.forEach(function(v) {
+                var key = v[0];
+                var val = style.getPropertyValue(key).trim();
+                var def = DEFAULTS[key];
+                if (val === '' || isNaN(parseFloat(val))) val = def;
+                if (parseFloat(val) !== def) {
+                    css += '  ' + key + ': ' + val + ' !important;\n';
+                    hasChanges = true;
+                }
             });
-            const density = style.getPropertyValue('--stone-density').trim();
-            if (density && parseInt(density) !== DEFAULTS['--stone-density']) css += `  --stone-density: ${density} !important;\n`;
-            oreNames.forEach(name => {
-                const val = style.getPropertyValue('--ore-' + name).trim();
-                if (val === '0') css += `  --ore-${name}: 0 !important;\n`;
+
+            var density = style.getPropertyValue('--stone-density').trim();
+            if (density && parseInt(density) !== 25) {
+                css += '  --stone-density: ' + density + ' !important;\n';
+                hasChanges = true;
+            }
+            
+            oreNames.forEach(function(name) {
+                var val = style.getPropertyValue('--ore-'+name).trim();
+                if (val === '0') {
+                    css += '  --ore-' + name + ': 0 !important;\n';
+                    hasChanges = true;
+                }
             });
-            const seed = document.getElementById('seed-input').value.trim();
-            if (seed) css += `  --seed-text: "${seed}" !important;\n`;
-            css += '}\n#toolbar-toggle, #toolbar-panel, #watermark { display: none !important; }\nbody { background: #000 !important; overflow: hidden !important; }\ncanvas { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; }';
+
+            var seedRaw = seedInput.value.trim();
+            if (seedRaw !== '') {
+                css += '  --seed-text: "' + seedRaw + '" !important;\n';
+                hasChanges = true;
+            }
+            
+            if (!hasChanges) css += '  /* все значения по умолчанию */\n';
+            
+            css += '}\n';
+            css += '#toolbar-toggle, #toolbar-panel, #watermark { display: none !important; }\n';
+            css += 'body { background: #000 !important; overflow: hidden !important; }\n';
+            css += 'canvas { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; }';
+            
             document.getElementById('css-code').textContent = css;
         }
 
-        // Копирование CSS, панель, модалка — стандартные обработчики (как в оригинале)
-        // ... (опущены для краткости, идентичны предыдущим версиям)
+        document.getElementById('copy-css-btn').addEventListener('click', function() {
+            var cssText = document.getElementById('css-code').textContent;
+            navigator.clipboard.writeText(cssText).then(function() {
+                var btn = document.getElementById('copy-css-btn');
+                btn.textContent = 'Скопировано';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.textContent = 'Копировать';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        var toggleBtn = document.getElementById('toolbar-toggle');
+        var panelEl = document.getElementById('toolbar-panel');
+        var closeBtn = document.getElementById('toolbar-close');
+
+        toggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            panelEl.classList.toggle('open');
+            if (panelEl.classList.contains('open')) updateCssOutput();
+        });
+
+        closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            panelEl.classList.remove('open');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!panelEl.contains(e.target) && e.target !== toggleBtn) {
+                panelEl.classList.remove('open');
+            }
+        });
+
+        panelEl.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        var guideBtn = document.getElementById('guide-btn');
+        var guideModal = document.getElementById('guide-modal');
+        var guideClose = document.getElementById('guide-close');
+
+        guideBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            guideModal.style.opacity = '1';
+            guideModal.style.visibility = 'visible';
+        });
+
+        guideClose.addEventListener('click', function() {
+            guideModal.style.opacity = '0';
+            guideModal.style.visibility = 'hidden';
+        });
+
+        guideModal.addEventListener('click', function(e) {
+            if (e.target === guideModal) {
+                guideModal.style.opacity = '0';
+                guideModal.style.visibility = 'hidden';
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && guideModal.style.visibility === 'visible') {
+                guideModal.style.opacity = '0';
+                guideModal.style.visibility = 'hidden';
+            }
+        });
+
+        setTimeout(updateCssOutput, 150);
     </script>
 </body>
 </html>
