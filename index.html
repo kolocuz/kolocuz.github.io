@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
+<head>val-input
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="darkreader-lock" content="1">
@@ -73,12 +73,27 @@
 
         #toolbar-panel .btn-reset,
         #toolbar-panel .copy-btn,
-        #toolbar-panel .guide-btn,
-        #toolbar-panel .slider-group .val {
+        #toolbar-panel .guide-btn {
             background: #fff !important;
             color: #000 !important;
         }
 
+.val-input {
+    background: #000 !important;
+    color: #fff !important;
+    border: 1px solid rgba(255,255,255,0.5) !important;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    width: 42px;
+    text-align: center;
+}
+.val-input:focus {
+    outline: none;
+    border-color: #fff !important;
+    box-shadow: 0 0 6px rgba(255,255,255,0.3);
+}
         #toolbar-panel .css-output,
         #toolbar-panel .css-output * {
             color: #0f0 !important;
@@ -91,19 +106,6 @@
             color: #fff !important;
             padding: 4px 8px; border-radius: 4px; font-size: 11px;
             width: 100%;
-        }
-
-        .val-input {
-            background: rgba(255,255,255,0.1) !important;
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #fff !important;
-            padding: 2px 6px; border-radius: 4px; font-size: 11px;
-            width: 65px; text-align: center;
-        }
-        .val-input:focus {
-            outline: none;
-            border-color: #fff !important;
-            background: rgba(255,255,255,0.2) !important;
         }
 
         .panel-header {
@@ -282,7 +284,7 @@
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
         <details class="section" id="ore-section">
-            <summary>Руды <span style="font-weight:400;text-transform:none;font-size:9px;">(клик — вкл/выкл)</span></summary>
+            <summary>Руды<span style="font-weight:400;text-transform:none;font-size:9px;"> (Пплотность и переключатели руд)</span></summary>
             <div id="ore-sliders"></div>
             <div class="texture-grid" id="texture-grid"></div>
         </details>
@@ -367,14 +369,8 @@
 
         vec3 getBlock(vec3 id, vec2 uv) {
             float h = hash(id);
-            
-            // Плотность руды (0-100)
             if (h * 100.0 > u_stoneDensity) return getTex(uv, -1).rgb;
-            
-            // Другой hash для выбора типа руды — чтобы руды были перемешаны
             float h2 = hash(id + vec3(9.0, 13.0, 7.0));
-            
-            // Собираем включённые руды
             float enabled[7];
             enabled[0] = u_oreCoal;
             enabled[1] = u_oreIron;
@@ -383,19 +379,14 @@
             enabled[4] = u_oreRedstone;
             enabled[5] = u_oreDiamond;
             enabled[6] = u_oreEmerald;
-            
             float count = 0.0;
             for (int i = 0; i < 7; i++) {
                 if (enabled[i] > 0.5) count += 1.0;
             }
-            
             if (count < 0.5) return getTex(uv, -1).rgb;
-            
-            // Равномерный выбор из включённых
             float r = h2 * count;
             float accum = 0.0;
             int ore = -1;
-            
             for (int i = 0; i < 7; i++) {
                 if (enabled[i] > 0.5) {
                     accum += 1.0;
@@ -405,7 +396,6 @@
                     }
                 }
             }
-            
             if (ore < 0) return getTex(uv, -1).rgb;
             return mix(getTex(uv, -1).rgb, getTex(uv, ore).rgb, 1.0);
         }
@@ -608,8 +598,12 @@
                 var dt = (ts - lastTs) * 0.001;
                 lastTs = ts;
                 
+                if (dt > 0.1) dt = 0.1;
+                
                 var speed = cssNum('--speed', 2);
                 timeAccum += dt * speed;
+                
+                if (timeAccum > 1000000) timeAccum = 0;
                 
                 gl.uniform1f(uTime, timeAccum);
                 gl.uniform2f(uRes, canvas.width, canvas.height);
@@ -698,7 +692,7 @@
         var oreSlidersDiv = document.getElementById('ore-sliders');
         var densityGroup = document.createElement('div');
         densityGroup.className = 'slider-group';
-        densityGroup.innerHTML = '<label><span>Плотность руды</span><span class="val" id="val--stone-density">5%</span></label><input type="range" id="density-slider" data-css="--stone-density" min="0" max="100" step="1" value="5">';
+        densityGroup.innerHTML = '<label><span>Плотность руды</span><span class="val" id="val--stone-density" style="background:#000;color:#000;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;">5%</span></label><input type="range" id="density-slider" data-css="--stone-density" min="0" max="100" step="1" value="5">';
         oreSlidersDiv.appendChild(densityGroup);
 
         var texGrid = document.getElementById('texture-grid');
