@@ -15,9 +15,9 @@
 
         :root {
             --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-threshold: 5;
-            --roughness-scale: 0.25; --crack-chance: 0.15; --hole-depth: -0.35;
+            --roughness-scale: 0.25; --crack-intensity: 0.5;
             --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
-            --tunnel-radius: 1.5;
+            --tunnel-radius: 1.5; --seed-text: "__random__";
             --ore-coal: 1; --ore-iron: 1; --ore-lapis: 1; --ore-gold: 1;
             --ore-redstone: 1; --ore-diamond: 1; --ore-emerald: 1;
         }
@@ -28,31 +28,43 @@
         #watermark {
             position: fixed; bottom: 16px; left: 16px; z-index: 50;
             font-size: 12px; pointer-events: auto; user-select: none;
-            color: #fff !important;
+            color: rgba(255,255,255,0.4) !important;
         }
-        #watermark a { color: #fff !important; text-decoration: none; }
-        #watermark a:hover { color: #ddd !important; }
+        #watermark a { color: rgba(255,255,255,0.4) !important; text-decoration: none; }
+        #watermark a:hover { color: rgba(255,255,255,0.8) !important; }
 
         #toolbar-toggle {
             position: fixed; top: 12px; right: 12px; z-index: 100;
             width: 36px; height: 36px; border-radius: 6px;
-            background: #0a0a0a !important; border: 2px solid #fff;
-            color: #fff !important; font-size: 18px;
+            background: rgba(10, 10, 10, 0.5) !important;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.5) !important;
+            font-size: 18px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+            box-shadow: none;
         }
-        #toolbar-toggle:hover { background: #222 !important; transform: scale(1.05); }
+        #toolbar-toggle:hover {
+            background: rgba(10, 10, 10, 0.9) !important;
+            border-color: #fff;
+            color: #fff !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(255,255,255,0.2);
+        }
 
         #toolbar-panel {
             position: fixed; top: 52px; right: 12px; z-index: 101;
             width: 270px; max-height: calc(100vh - 80px);
-            background: #0a0a0a !important; border: 1px solid rgba(255,255,255,0.4);
+            background: rgba(10, 10, 10, 0.92) !important;
+            border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px; display: flex; flex-direction: column; overflow-y: auto;
             opacity: 0; visibility: hidden; transform: translateY(-6px);
-            transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+            transition: opacity 0.25s, visibility 0.25s, transform 0.25s;
             font-size: 12px; padding: 0;
-            box-shadow: 0 0 30px rgba(255,255,255,0.15), 0 8px 20px rgba(0,0,0,0.8);
+            box-shadow: 0 0 40px rgba(0,0,0,0.9), 0 8px 30px rgba(0,0,0,0.8);
             color: #fff !important;
+            backdrop-filter: blur(12px);
         }
         #toolbar-panel.open { opacity: 1; visibility: visible; transform: translateY(0); }
         #toolbar-panel::-webkit-scrollbar { width: 3px; }
@@ -90,10 +102,21 @@
             color: #faa !important;
         }
 
+        #toolbar-panel input[type="text"] {
+            background: rgba(255,255,255,0.1) !important;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff !important;
+            padding: 4px 8px; border-radius: 4px; font-size: 11px;
+            width: 100%;
+        }
+        #toolbar-panel input[type="text"]::placeholder {
+            color: rgba(255,255,255,0.4) !important;
+        }
+
         .panel-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 16px; font-weight: 700; font-size: 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
         }
         .panel-header button {
             background: none !important; border: none; font-size: 18px;
@@ -103,7 +126,7 @@
 
         .section {
             padding: 12px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.15);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         .section-title {
             font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -277,8 +300,8 @@
         <div class="section" style="text-align:center;">
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
-        <details class="section" open>
-            <summary>Руды <span style="font-weight:400;text-transform:none;font-size:9px;">(клик — скрыть)</span></summary>
+        <details class="section">
+            <summary>Руды <span style="font-weight:400;text-transform:none;font-size:9px;">(клик — показать)</span></summary>
             <div class="texture-grid" id="texture-grid"></div>
         </details>
         <div class="footer-link">
@@ -300,12 +323,6 @@
             <p style="margin-top:16px;font-size:12px;">
                 <b>💡 Совет:</b> Если шейдер лагает — уменьшите разрешение источника. Если качество низкое — увеличьте.
             </p>
-            <p style="margin-top:8px;color:#ccc;font-size:11px;">
-                <b>📐 Рекомендуемые разрешения:</b><br>
-                4:3 — 800×600, 1024×768<br>
-                16:9 — 1280×720, 1920×1080<br>
-                16:10 — 1280×800, 1680×1050
-            </p>
         </div>
     </div>
 
@@ -323,12 +340,12 @@
         uniform float u_maxSteps;
         uniform float u_stoneThreshold;
         uniform float u_roughnessScale;
-        uniform float u_crackChance;
-        uniform float u_holeDepth;
+        uniform float u_crackIntensity;
         uniform float u_fogDensity;
         uniform float u_vignetteStrength;
         uniform float u_brightnessMult;
         uniform float u_tunnelRadius;
+        uniform float u_seed;
         uniform sampler2D stone;
         uniform sampler2D coal_ore;
         uniform sampler2D iron_ore;
@@ -385,18 +402,31 @@
         }
 
         vec3 P1(float z) { return vec3(sin(z*0.2)*3.0,cos(z*0.3)*2.0,z); }
-        vec3 P2(float z) { return vec3(sin(z*0.2),cos(z*0.3)*4.0-1.0,z); }
-        vec3 P3(float z) { return vec3(sin(z*0.3)*3.0,cos(z*0.2)*1.0-1.0,z); }
+
+        vec3 P2(float z) {
+            float s = u_seed * 4294967295.0;
+            float n1 = noise(vec3(z * 0.05 + s * 0.001, s * 0.0001, 0.0)) * 2.0 - 1.0;
+            float n2 = noise(vec3(s * 0.0001, z * 0.05 + s * 0.001, 0.0)) * 2.0 - 1.0;
+            return vec3(sin(z*0.2) + n1 * 0.8, cos(z*0.3)*4.0-1.0 + n2 * 0.8, z);
+        }
+
+        vec3 P3(float z) {
+            float s = u_seed * 4294967295.0;
+            float n1 = noise(vec3(z * 0.06 + s * 0.002, 5.0 + s * 0.0002, 5.0)) * 2.0 - 1.0;
+            float n2 = noise(vec3(5.0 + s * 0.0002, z * 0.06 + s * 0.002, 5.0)) * 2.0 - 1.0;
+            return vec3(sin(z*0.3)*3.0 + n1 * 0.7, cos(z*0.2)*1.0-1.0 + n2 * 0.7, z);
+        }
 
         float map(vec3 p) {
             float d1=length(p-P1(p.z)), d2=length(p-P2(p.z)), d3=length(p-P3(p.z));
             float bd=u_tunnelRadius-min(d1,min(d2,d3));
             if(bd>2.0) return bd;
-            float zPos=p.z*0.5;
-            float sd=bd*(1.0+sin(zPos)*0.005+cos(zPos*0.7)*0.0025);
             float sm=smoothstep(0.0,0.4,abs(bd));
+            float crackDepth = u_crackIntensity * -0.7;
+            float crackChance = u_crackIntensity * 0.5;
+            float sd=bd;
             sd+=noise(p*6.0)*u_roughnessScale*sm;
-            sd+=u_holeDepth*step(noise(p*1.5),u_crackChance)*sm;
+            sd+=crackDepth*step(noise(p*1.5),crackChance)*sm;
             return sd;
         }
 
@@ -441,6 +471,16 @@
             return val ? parseFloat(val) : fallback;
         }
 
+        function hashString(str) {
+            var hash = 0;
+            for (var i = 0; i < str.length; i++) {
+                var char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return hash >>> 0;
+        }
+
         function loadTexture(url, slotIndex) {
             return new Promise(function(resolve) {
                 var img = new Image();
@@ -471,7 +511,7 @@
 
         const DEFAULTS = {
             '--speed': 2.0, '--fov': 1.2, '--max-steps': 100, '--stone-threshold': 5,
-            '--roughness-scale': 0.25, '--crack-chance': 0.15, '--hole-depth': -0.35,
+            '--roughness-scale': 0.25, '--crack-intensity': 0.5,
             '--fog-density': 0.001, '--vignette-strength': 0.1, '--brightness-mult': 1.5,
             '--tunnel-radius': 1.5,
             '--ore-coal': 1, '--ore-iron': 1, '--ore-lapis': 1, '--ore-gold': 1,
@@ -504,8 +544,8 @@
 
             var NU = {};
             ['u_speed','u_fov','u_maxSteps','u_stoneThreshold',
-             'u_roughnessScale','u_crackChance','u_holeDepth','u_fogDensity','u_vignetteStrength',
-             'u_brightnessMult','u_tunnelRadius',
+             'u_roughnessScale','u_crackIntensity','u_fogDensity','u_vignetteStrength',
+             'u_brightnessMult','u_tunnelRadius','u_seed',
              'u_oreCoal','u_oreIron','u_oreLapis','u_oreGold','u_oreRedstone','u_oreDiamond','u_oreEmerald'
             ].forEach(function(n) {
                 NU[n] = gl.getUniformLocation(program, n);
@@ -538,12 +578,12 @@
                 gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps', 100));
                 gl.uniform1f(NU.u_stoneThreshold, cssNum('--stone-threshold', 5) / 100);
                 gl.uniform1f(NU.u_roughnessScale, cssNum('--roughness-scale', 0.25));
-                gl.uniform1f(NU.u_crackChance, cssNum('--crack-chance', 0.15));
-                gl.uniform1f(NU.u_holeDepth, cssNum('--hole-depth', -0.35));
+                gl.uniform1f(NU.u_crackIntensity, cssNum('--crack-intensity', 0.5));
                 gl.uniform1f(NU.u_fogDensity, cssNum('--fog-density', 0.001));
                 gl.uniform1f(NU.u_vignetteStrength, cssNum('--vignette-strength', 0.1));
                 gl.uniform1f(NU.u_brightnessMult, cssNum('--brightness-mult', 1.5));
                 gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 1.5));
+                gl.uniform1f(NU.u_seed, getSeedValue());
                 gl.uniform1f(NU.u_oreCoal, cssNum('--ore-coal', 1));
                 gl.uniform1f(NU.u_oreIron, cssNum('--ore-iron', 1));
                 gl.uniform1f(NU.u_oreLapis, cssNum('--ore-lapis', 1));
@@ -562,6 +602,7 @@
                 timeAccum += dt * currentSpeed;
                 currentSpeed = newSpeed;
                 
+                window._time = timeAccum;
                 gl.uniform1f(uTime, timeAccum);
                 gl.uniform2f(uRes, canvas.width, canvas.height);
                 updateUniforms();
@@ -574,17 +615,16 @@
         init();
 
         var cssVars = [
-            ['--speed','Скорость полёта',0.1,10,0.1,2.0],
+            ['--speed','Скорость полёта',0.5,8,0.1,2.0],
             ['--fov','Угол обзора',0.5,3,0.1,1.2],
             ['--max-steps','Дальность прорисовки',10,200,1,100],
             ['--stone-threshold','Количество руды',0,50,1,5],
             ['--roughness-scale','Рельеф стен',0,0.5,0.01,0.25],
-            ['--crack-chance','Частота трещин',0,0.5,0.01,0.15],
-            ['--hole-depth','Глубина трещин',-1,0,0.01,-0.35],
+            ['--crack-intensity','Трещины',0,1,0.01,0.5],
             ['--fog-density','Плотность тумана',0,0.01,0.0001,0.001],
             ['--vignette-strength','Затемнение краёв',0,0.5,0.01,0.1],
             ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
-            ['--tunnel-radius','Ширина тоннеля',2,3,0.1,1.5],
+            ['--tunnel-radius','Ширина тоннеля',1.5,2.5,0.01,1.5],
         ];
         var oreNames = ['coal','iron','lapis','gold','redstone','diamond','emerald'];
 
@@ -600,6 +640,29 @@
             var g = document.createElement('div'); g.className = 'slider-group';
             g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
             slidersDiv.appendChild(g);
+        });
+
+        // Seed input
+        var seedGroup = document.createElement('div');
+        seedGroup.className = 'slider-group';
+        seedGroup.innerHTML = '<label><span>Сид тоннеля</span></label><input type="text" data-css="--seed-text" placeholder="случайный">';
+        slidersDiv.appendChild(seedGroup);
+
+        var seedInput = document.querySelector('input[data-css="--seed-text"]');
+
+        function getSeedValue() {
+            var raw = seedInput.value.trim();
+            if (raw === '') {
+                return Math.random();
+            } else {
+                return hashString(raw) / 4294967295;
+            }
+        }
+
+        seedInput.addEventListener('input', function() {
+            var val = this.value.trim();
+            document.documentElement.style.setProperty('--seed-text', '"' + (val || '__random__') + '"');
+            updateCssOutput();
         });
 
         var texGrid = document.getElementById('texture-grid');
@@ -654,6 +717,8 @@
                 var item = texGrid.querySelector('.texture-item[data-ore="'+name+'"]');
                 if (item) item.classList.remove('disabled');
             });
+            seedInput.value = '';
+            document.documentElement.style.setProperty('--seed-text', '"__random__"');
             updateCssOutput();
         });
 
@@ -668,7 +733,7 @@
                 var def = DEFAULTS[key];
                 if (val === '' || isNaN(parseFloat(val))) val = def;
                 if (parseFloat(val) !== def) {
-                    css += '  ' + key + ': ' + val + ' !important;\n';
+                    css += '  ' + key + ': ' + val + ';\n';
                     hasChanges = true;
                 }
             });
@@ -679,16 +744,26 @@
                 var def = DEFAULTS[key];
                 if (val === '' || isNaN(parseFloat(val))) val = def;
                 if (parseFloat(val) !== def) {
-                    css += '  ' + key + ': ' + val + ' !important;\n';
+                    css += '  ' + key + ': ' + val + ';\n';
                     hasChanges = true;
                 }
             });
+
+            var seedRaw = seedInput.value.trim();
+            if (seedRaw !== '') {
+                css += '  --seed-text: "' + seedRaw + '";\n';
+                hasChanges = true;
+            }
             
             if (!hasChanges) {
                 css += '  /* все значения по умолчанию */\n';
             }
             
-            css += '}\n#toolbar-toggle, #toolbar-panel { display: none !important; }';
+            css += '}\n';
+            css += '#toolbar-toggle, #toolbar-panel, #watermark { display: none !important; }\n';
+            css += 'body { background: #000; overflow: hidden; }\n';
+            css += 'canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }';
+            
             document.getElementById('css-code').textContent = css;
         }
 
