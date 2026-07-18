@@ -54,7 +54,7 @@
 
         #toolbar-panel {
             position: fixed; top: 52px; right: 12px; z-index: 101;
-            width: 270px; max-height: calc(100vh - 80px);
+            width: 290px; max-height: calc(100vh - 80px);
             background: rgba(10, 10, 10, 0.92) !important;
             border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px; display: flex; flex-direction: column; overflow-y: auto;
@@ -93,6 +93,19 @@
             width: 100%;
         }
 
+        .val-input {
+            background: rgba(255,255,255,0.1) !important;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff !important;
+            padding: 2px 6px; border-radius: 4px; font-size: 11px;
+            width: 65px; text-align: center;
+        }
+        .val-input:focus {
+            outline: none;
+            border-color: #fff !important;
+            background: rgba(255,255,255,0.2) !important;
+        }
+
         .panel-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 12px 16px; font-weight: 700; font-size: 14px;
@@ -114,14 +127,10 @@
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        .slider-group { margin-bottom: 6px; }
+        .slider-group { margin-bottom: 8px; }
         .slider-group label {
-            display: flex; justify-content: space-between; font-size: 11px;
-            margin-bottom: 4px;
-        }
-        .slider-group .val {
-            font-size: 10px; font-weight: 700;
-            padding: 2px 8px; border-radius: 4px;
+            display: flex; justify-content: space-between; align-items: center; 
+            font-size: 11px; margin-bottom: 4px;
         }
         .slider-group input[type="range"] {
             width: 100%; height: 4px; accent-color: #fff;
@@ -629,9 +638,36 @@
 
         var slidersDiv = document.getElementById('sliders');
         cssVars.forEach(function(v) {
-            var g = document.createElement('div'); g.className = 'slider-group';
-            g.innerHTML = '<label><span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
+            var g = document.createElement('div'); 
+            g.className = 'slider-group';
+            g.innerHTML = '<label><span>'+v[1]+'</span><input type="number" class="val-input" id="val'+v[0]+'" value="'+v[5]+'" step="any"></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
             slidersDiv.appendChild(g);
+            
+            var rangeInput = g.querySelector('input[type="range"]');
+            var numberInput = g.querySelector('input[type="number"]');
+            
+            numberInput.addEventListener('input', function() {
+                var val = parseFloat(this.value);
+                if (!isNaN(val)) {
+                    var min = parseFloat(rangeInput.min);
+                    var max = parseFloat(rangeInput.max);
+                    if (val > max) {
+                        rangeInput.value = max;
+                    } else if (val < min) {
+                        rangeInput.value = min;
+                    } else {
+                        rangeInput.value = val;
+                    }
+                    document.documentElement.style.setProperty(rangeInput.dataset.css, val);
+                    updateCssOutput();
+                }
+            });
+            
+            numberInput.addEventListener('blur', function() {
+                if (this.value === '') {
+                    this.value = rangeInput.value;
+                }
+            });
         });
 
         var seedGroup = document.createElement('div');
@@ -659,7 +695,6 @@
             updateCssOutput();
         });
 
-        // Ползунок плотности внутри секции руд
         var oreSlidersDiv = document.getElementById('ore-sliders');
         var densityGroup = document.createElement('div');
         densityGroup.className = 'slider-group';
@@ -697,8 +732,11 @@
             s.addEventListener('input', function() {
                 var v = parseFloat(s.value);
                 document.documentElement.style.setProperty(s.dataset.css, v);
-                var valEl = document.getElementById('val'+s.dataset.css);
-                if (valEl) valEl.textContent = s.id === 'density-slider' ? v + '%' : v;
+                var valInput = document.getElementById('val'+s.dataset.css);
+                if (valInput) valInput.value = v;
+                if (s.id === 'density-slider') {
+                    document.getElementById('val--stone-density').textContent = v + '%';
+                }
                 updateCssOutput();
             });
         });
@@ -708,8 +746,8 @@
                 document.documentElement.style.setProperty(v[0], v[5]);
                 var slider = document.querySelector('input[data-css="'+v[0]+'"]');
                 if (slider) slider.value = v[5];
-                var valEl = document.getElementById('val'+v[0]);
-                if (valEl) valEl.textContent = v[5];
+                var valInput = document.getElementById('val'+v[0]);
+                if (valInput) valInput.value = v[5];
             });
             document.documentElement.style.setProperty('--stone-density', 5);
             document.getElementById('density-slider').value = 5;
