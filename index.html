@@ -14,12 +14,17 @@
         }
 
         :root {
-            --speed: 2.0; --fov: 1.2; --max-steps: 100; --stone-threshold: 5;
+            --speed: 2.0; --fov: 1.2; --max-steps: 100;
             --roughness-scale: 0.25; --crack-intensity: 0.5;
             --fog-density: 0.001; --vignette-strength: 0.1; --brightness-mult: 1.5;
             --tunnel-radius: 0.8; --seed-text: "__random__";
-            --ore-coal: 1; --ore-iron: 1; --ore-lapis: 1; --ore-gold: 1;
-            --ore-redstone: 1; --ore-diamond: 1; --ore-emerald: 1;
+            --chance-coal: 10;
+            --chance-iron: 5;
+            --chance-lapis: 3;
+            --chance-gold: 3;
+            --chance-redstone: 2;
+            --chance-diamond: 1;
+            --chance-emerald: 1;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
@@ -84,22 +89,6 @@
         #toolbar-panel .css-output * {
             color: #0f0 !important;
             background: #000 !important;
-        }
-
-        #toolbar-panel .texture-item .crosshair {
-            color: transparent !important;
-            -webkit-text-fill-color: transparent !important;
-        }
-        #toolbar-panel .texture-item:hover .crosshair {
-            color: rgba(255,255,255,0.5) !important;
-            -webkit-text-fill-color: rgba(255,255,255,0.5) !important;
-        }
-        #toolbar-panel .texture-item.disabled .crosshair {
-            color: #f00 !important;
-            -webkit-text-fill-color: #f00 !important;
-        }
-        #toolbar-panel .texture-item.disabled .texture-label {
-            color: #faa !important;
         }
 
         #toolbar-panel input[type="text"] {
@@ -191,41 +180,6 @@
         details summary:hover { opacity: 0.8; }
         details summary:focus, details summary:active { outline: none; }
 
-        .texture-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
-        }
-        .texture-item {
-            position: relative; aspect-ratio: 1;
-            border: 2px solid rgba(255,255,255,0.2); border-radius: 5px;
-            background-size: cover; background-position: center;
-            image-rendering: pixelated; background-color: #111;
-            cursor: pointer; transition: all 0.2s; overflow: hidden;
-        }
-        .texture-item:hover { border-color: #fff; transform: scale(1.05); }
-        .texture-item:focus, .texture-item:active { outline: none; border-color: rgba(255,255,255,0.2); }
-        .texture-item.disabled {
-            opacity: 0.5; border-color: #f33 !important;
-            box-shadow: inset 0 0 20px rgba(255,0,0,0.3);
-        }
-        .texture-item .crosshair {
-            position: absolute; inset: 0; display: flex; align-items: center;
-            justify-content: center; pointer-events: none;
-            font-size: 34px; text-shadow: none; transition: color 0.2s, text-shadow 0.2s;
-        }
-        .texture-item:hover .crosshair {
-            text-shadow: 0 0 10px rgba(0,0,0,0.9);
-        }
-        .texture-item.disabled .crosshair {
-            text-shadow: 0 0 20px rgba(255,0,0,0.9);
-        }
-        .texture-label {
-            position: absolute; bottom: 3px; left: 5px;
-            font-size: 9px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 3px;
-            pointer-events: none;
-        }
-
         .guide-btn {
             border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer;
             font-size: 11px; font-weight: 700; width: 100%; transition: all 0.2s;
@@ -301,8 +255,8 @@
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
         <details class="section">
-            <summary>Руды <span style="font-weight:400;text-transform:none;font-size:9px;">(клик — показать)</span></summary>
-            <div class="texture-grid" id="texture-grid"></div>
+            <summary>Шансы руд <span style="font-weight:400;text-transform:none;font-size:9px;">(0-100%)</span></summary>
+            <div id="ore-sliders"></div>
         </details>
         <div class="footer-link">
             <a href="https://github.com/kolocuz/kolocuz.github.io" target="_blank">github.com/kolocuz</a>
@@ -338,7 +292,6 @@
         uniform float u_speed;
         uniform float u_fov;
         uniform float u_maxSteps;
-        uniform float u_stoneThreshold;
         uniform float u_roughnessScale;
         uniform float u_crackIntensity;
         uniform float u_fogDensity;
@@ -354,13 +307,13 @@
         uniform sampler2D redstone_ore;
         uniform sampler2D diamond_ore;
         uniform sampler2D emerald_ore;
-        uniform float u_oreCoal;
-        uniform float u_oreIron;
-        uniform float u_oreLapis;
-        uniform float u_oreGold;
-        uniform float u_oreRedstone;
-        uniform float u_oreDiamond;
-        uniform float u_oreEmerald;
+        uniform float u_chanceCoal;
+        uniform float u_chanceIron;
+        uniform float u_chanceLapis;
+        uniform float u_chanceGold;
+        uniform float u_chanceRedstone;
+        uniform float u_chanceDiamond;
+        uniform float u_chanceEmerald;
 
         float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 
@@ -384,21 +337,30 @@
         }
 
         vec3 getBlock(vec3 id, vec2 uv) {
-            float h=hash(id);
-            if(h > u_stoneThreshold) return getTex(uv,-1).rgb;
-            float r=hash(id+vec3(5,7,11));
-            int o=0;
-            if(r<0.45) o=0; else if(r<0.70) o=1; else if(r<0.80) o=2; else if(r<0.87) o=3; else if(r<0.94) o=4; else if(r<0.98) o=5; else o=6;
-            float enabled = 1.0;
-            if(o==0) enabled = u_oreCoal;
-            else if(o==1) enabled = u_oreIron;
-            else if(o==2) enabled = u_oreLapis;
-            else if(o==3) enabled = u_oreGold;
-            else if(o==4) enabled = u_oreRedstone;
-            else if(o==5) enabled = u_oreDiamond;
-            else if(o==6) enabled = u_oreEmerald;
-            if(enabled < 0.5) return getTex(uv,-1).rgb;
-            return mix(getTex(uv,-1).rgb, getTex(uv,o).rgb, 1.0);
+            float h = hash(id);
+            
+            float totalChance = u_chanceCoal + u_chanceIron + u_chanceLapis + 
+                                u_chanceGold + u_chanceRedstone + u_chanceDiamond + u_chanceEmerald;
+            
+            if (h * 100.0 > totalChance) return getTex(uv, -1).rgb;
+            
+            if (totalChance < 0.01) return getTex(uv, -1).rgb;
+            
+            float r = h * totalChance;
+            float accum = 0.0;
+            int ore = -1;
+            
+            accum += u_chanceCoal;        if (r < accum) { ore = 0; }
+            else { accum += u_chanceIron;      if (r < accum) { ore = 1; }
+            else { accum += u_chanceLapis;     if (r < accum) { ore = 2; }
+            else { accum += u_chanceGold;      if (r < accum) { ore = 3; }
+            else { accum += u_chanceRedstone;  if (r < accum) { ore = 4; }
+            else { accum += u_chanceDiamond;   if (r < accum) { ore = 5; }
+            else { accum += u_chanceEmerald;   if (r < accum) { ore = 6; }
+            }}}}}}
+            
+            if (ore < 0) return getTex(uv, -1).rgb;
+            return mix(getTex(uv, -1).rgb, getTex(uv, ore).rgb, 1.0);
         }
 
         vec3 P1(float z) { return vec3(sin(z*0.2)*3.0,cos(z*0.3)*2.0,z); }
@@ -510,12 +472,12 @@
         }
 
         const DEFAULTS = {
-            '--speed': 2.0, '--fov': 1.2, '--max-steps': 100, '--stone-threshold': 5,
+            '--speed': 2.0, '--fov': 1.2, '--max-steps': 100,
             '--roughness-scale': 0.25, '--crack-intensity': 0.5,
             '--fog-density': 0.001, '--vignette-strength': 0.1, '--brightness-mult': 1.5,
             '--tunnel-radius': 0.8,
-            '--ore-coal': 1, '--ore-iron': 1, '--ore-lapis': 1, '--ore-gold': 1,
-            '--ore-redstone': 1, '--ore-diamond': 1, '--ore-emerald': 1
+            '--chance-coal': 10, '--chance-iron': 5, '--chance-lapis': 3,
+            '--chance-gold': 3, '--chance-redstone': 2, '--chance-diamond': 1, '--chance-emerald': 1
         };
 
         var currentSeed = null;
@@ -545,10 +507,11 @@
             gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
 
             var NU = {};
-            ['u_speed','u_fov','u_maxSteps','u_stoneThreshold',
+            ['u_speed','u_fov','u_maxSteps',
              'u_roughnessScale','u_crackIntensity','u_fogDensity','u_vignetteStrength',
              'u_brightnessMult','u_tunnelRadius','u_seed',
-             'u_oreCoal','u_oreIron','u_oreLapis','u_oreGold','u_oreRedstone','u_oreDiamond','u_oreEmerald'
+             'u_chanceCoal','u_chanceIron','u_chanceLapis','u_chanceGold',
+             'u_chanceRedstone','u_chanceDiamond','u_chanceEmerald'
             ].forEach(function(n) {
                 NU[n] = gl.getUniformLocation(program, n);
             });
@@ -578,21 +541,20 @@
                 gl.uniform1f(NU.u_speed, 1.0);
                 gl.uniform1f(NU.u_fov, cssNum('--fov', 1.2));
                 gl.uniform1f(NU.u_maxSteps, cssNum('--max-steps', 100));
-                gl.uniform1f(NU.u_stoneThreshold, cssNum('--stone-threshold', 5) / 100);
                 gl.uniform1f(NU.u_roughnessScale, cssNum('--roughness-scale', 0.25));
                 gl.uniform1f(NU.u_crackIntensity, cssNum('--crack-intensity', 0.5));
                 gl.uniform1f(NU.u_fogDensity, cssNum('--fog-density', 0.001));
                 gl.uniform1f(NU.u_vignetteStrength, cssNum('--vignette-strength', 0.1));
                 gl.uniform1f(NU.u_brightnessMult, cssNum('--brightness-mult', 1.5));
-                gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 1.5));
+                gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 0.8));
                 gl.uniform1f(NU.u_seed, getSeedValue());
-                gl.uniform1f(NU.u_oreCoal, cssNum('--ore-coal', 1));
-                gl.uniform1f(NU.u_oreIron, cssNum('--ore-iron', 1));
-                gl.uniform1f(NU.u_oreLapis, cssNum('--ore-lapis', 1));
-                gl.uniform1f(NU.u_oreGold, cssNum('--ore-gold', 1));
-                gl.uniform1f(NU.u_oreRedstone, cssNum('--ore-redstone', 1));
-                gl.uniform1f(NU.u_oreDiamond, cssNum('--ore-diamond', 1));
-                gl.uniform1f(NU.u_oreEmerald, cssNum('--ore-emerald', 1));
+                gl.uniform1f(NU.u_chanceCoal, cssNum('--chance-coal', 10));
+                gl.uniform1f(NU.u_chanceIron, cssNum('--chance-iron', 5));
+                gl.uniform1f(NU.u_chanceLapis, cssNum('--chance-lapis', 3));
+                gl.uniform1f(NU.u_chanceGold, cssNum('--chance-gold', 3));
+                gl.uniform1f(NU.u_chanceRedstone, cssNum('--chance-redstone', 2));
+                gl.uniform1f(NU.u_chanceDiamond, cssNum('--chance-diamond', 1));
+                gl.uniform1f(NU.u_chanceEmerald, cssNum('--chance-emerald', 1));
             }
 
             function render(ts) {
@@ -620,7 +582,6 @@
             ['--speed','Скорость полёта',0.5,8,0.1,2.0],
             ['--fov','Угол обзора',0.5,3,0.1,1.2],
             ['--max-steps','Дальность прорисовки',10,200,1,100],
-            ['--stone-threshold','Количество руды',0,50,1,5],
             ['--roughness-scale','Рельеф стен',0,0.5,0.01,0.25],
             ['--crack-intensity','Трещины',0,1,0.01,0.5],
             ['--fog-density','Плотность тумана',0,0.01,0.0001,0.001],
@@ -628,13 +589,22 @@
             ['--brightness-mult','Яркость',0.5,3,0.1,1.5],
             ['--tunnel-radius','Ширина тоннеля',0.8,1.5,0.01,0.8],
         ];
-        var oreNames = ['coal','iron','lapis','gold','redstone','diamond','emerald'];
+
+        var oreChances = [
+            ['--chance-coal','Уголь',0,100,1,10],
+            ['--chance-iron','Железо',0,100,1,5],
+            ['--chance-lapis','Лазурит',0,100,1,3],
+            ['--chance-gold','Золото',0,100,1,3],
+            ['--chance-redstone','Редстоун',0,100,1,2],
+            ['--chance-diamond','Алмазы',0,100,1,1],
+            ['--chance-emerald','Изумруды',0,100,1,1],
+        ];
 
         cssVars.forEach(function(v) {
             document.documentElement.style.setProperty(v[0], v[5]);
         });
-        oreNames.forEach(function(name) {
-            document.documentElement.style.setProperty('--ore-'+name, 1);
+        oreChances.forEach(function(v) {
+            document.documentElement.style.setProperty(v[0], v[5]);
         });
 
         var slidersDiv = document.getElementById('sliders');
@@ -675,32 +645,13 @@
             updateCssOutput();
         });
 
-        var texGrid = document.getElementById('texture-grid');
-        var oreState = {};
-        oreNames.forEach(function(name) {
-            oreState[name] = 1;
-            var item = document.createElement('div'); 
-            item.className = 'texture-item';
-            item.dataset.ore = name;
-            item.style.backgroundImage = 'url(assets/'+name+'_ore.png)';
-            var cross = document.createElement('div');
-            cross.className = 'crosshair';
-            cross.textContent = '✕';
-            item.appendChild(cross);
-            var label = document.createElement('div');
-            label.className = 'texture-label';
-            label.textContent = name;
-            item.appendChild(label);
-            item.addEventListener('click', function(e) {
-                e.stopPropagation();
-                var ore = this.dataset.ore;
-                var newState = oreState[ore] === 1 ? 0 : 1;
-                oreState[ore] = newState;
-                this.classList.toggle('disabled', newState === 0);
-                document.documentElement.style.setProperty('--ore-'+ore, newState);
-                updateCssOutput();
-            });
-            texGrid.appendChild(item);
+        var oreSlidersDiv = document.getElementById('ore-sliders');
+        oreChances.forEach(function(v) {
+            var g = document.createElement('div'); 
+            g.className = 'slider-group';
+            g.style.marginBottom = '8px';
+            g.innerHTML = '<label style="align-items:center;"><span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:16px;height:16px;background-image:url(assets/'+v[0].replace('--chance-','')+'_ore.png);background-size:cover;image-rendering:pixelated;border-radius:2px;"></span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'%</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
+            oreSlidersDiv.appendChild(g);
         });
 
         document.querySelectorAll('input[type="range"]').forEach(function(s) {
@@ -708,7 +659,13 @@
                 var v = parseFloat(s.value);
                 document.documentElement.style.setProperty(s.dataset.css, v);
                 var valEl = document.getElementById('val'+s.dataset.css);
-                if (valEl) valEl.textContent = v;
+                if (valEl) {
+                    if (s.dataset.css.includes('chance')) {
+                        valEl.textContent = v + '%';
+                    } else {
+                        valEl.textContent = v;
+                    }
+                }
                 updateCssOutput();
             });
         });
@@ -721,12 +678,15 @@
                 var valEl = document.getElementById('val'+v[0]);
                 if (valEl) valEl.textContent = v[5];
             });
-            oreNames.forEach(function(name) {
-                oreState[name] = 1;
-                document.documentElement.style.setProperty('--ore-'+name, 1);
-                var item = texGrid.querySelector('.texture-item[data-ore="'+name+'"]');
-                if (item) item.classList.remove('disabled');
+            
+            oreChances.forEach(function(v) {
+                document.documentElement.style.setProperty(v[0], v[5]);
+                var slider = document.querySelector('input[data-css="'+v[0]+'"]');
+                if (slider) slider.value = v[5];
+                var valEl = document.getElementById('val'+v[0]);
+                if (valEl) valEl.textContent = v[5] + '%';
             });
+            
             seedInput.value = '';
             currentSeed = Math.random();
             document.documentElement.style.setProperty('--seed-text', '"__random__"');
@@ -749,8 +709,8 @@
                 }
             });
             
-            oreNames.forEach(function(name) {
-                var key = '--ore-'+name;
+            oreChances.forEach(function(v) {
+                var key = v[0];
                 var val = style.getPropertyValue(key).trim();
                 var def = DEFAULTS[key];
                 if (val === '' || isNaN(parseFloat(val))) val = def;
