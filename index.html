@@ -91,14 +91,16 @@
             background: #000 !important;
         }
 
-        #toolbar-panel input[type="text"] {
+        #toolbar-panel input[type="text"],
+        #toolbar-panel input[type="number"] {
             background: rgba(255,255,255,0.1) !important;
             border: 1px solid rgba(255,255,255,0.2);
             color: #fff !important;
             padding: 4px 8px; border-radius: 4px; font-size: 11px;
             width: 100%;
         }
-        #toolbar-panel input[type="text"]::placeholder {
+        #toolbar-panel input[type="text"]::placeholder,
+        #toolbar-panel input[type="number"]::placeholder {
             color: rgba(255,255,255,0.4) !important;
         }
 
@@ -126,7 +128,7 @@
         .slider-group { margin-bottom: 6px; }
         .slider-group label {
             display: flex; justify-content: space-between; font-size: 11px;
-            margin-bottom: 4px;
+            margin-bottom: 4px; align-items: center;
         }
         .slider-group .val {
             font-size: 10px; font-weight: 700;
@@ -138,6 +140,13 @@
         }
         input[type="range"]:focus, input[type="range"]:active {
             outline: none; accent-color: #fff; background: rgba(255,255,255,0.2);
+        }
+
+        .number-input-group {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .number-input-group input[type="number"] {
+            width: 60px; text-align: center;
         }
 
         .btn-reset {
@@ -179,6 +188,21 @@
         }
         details summary:hover { opacity: 0.8; }
         details summary:focus, details summary:active { outline: none; }
+
+        .ore-row {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        }
+        .ore-icon {
+            width: 20px; height: 20px; border-radius: 3px;
+            background-size: cover; image-rendering: pixelated;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .ore-label {
+            flex: 1; font-size: 11px; font-weight: 600;
+        }
+        .ore-input {
+            width: 60px; text-align: center;
+        }
 
         .guide-btn {
             border: none; padding: 8px 14px; border-radius: 5px; cursor: pointer;
@@ -255,7 +279,7 @@
             <button class="guide-btn" id="guide-btn">📺 Как добавить в OBS</button>
         </div>
         <details class="section">
-            <summary>Шансы руд <span style="font-weight:400;text-transform:none;font-size:9px;">(0-100%)</span></summary>
+            <summary>Шансы руд <span style="font-weight:400;text-transform:none;font-size:9px;">(сумма = плотность)</span></summary>
             <div id="ore-sliders"></div>
         </details>
         <div class="footer-link">
@@ -342,22 +366,40 @@
             float totalChance = u_chanceCoal + u_chanceIron + u_chanceLapis + 
                                 u_chanceGold + u_chanceRedstone + u_chanceDiamond + u_chanceEmerald;
             
-            if (h * 100.0 > totalChance) return getTex(uv, -1).rgb;
-            
             if (totalChance < 0.01) return getTex(uv, -1).rgb;
+            
+            if (h * 100.0 > totalChance) return getTex(uv, -1).rgb;
             
             float r = h * totalChance;
             float accum = 0.0;
             int ore = -1;
             
-            accum += u_chanceCoal;        if (r < accum) { ore = 0; }
-            else { accum += u_chanceIron;      if (r < accum) { ore = 1; }
-            else { accum += u_chanceLapis;     if (r < accum) { ore = 2; }
-            else { accum += u_chanceGold;      if (r < accum) { ore = 3; }
-            else { accum += u_chanceRedstone;  if (r < accum) { ore = 4; }
-            else { accum += u_chanceDiamond;   if (r < accum) { ore = 5; }
-            else { accum += u_chanceEmerald;   if (r < accum) { ore = 6; }
-            }}}}}}
+            accum += u_chanceCoal;
+            if (r < accum) ore = 0;
+            else {
+                accum += u_chanceIron;
+                if (r < accum) ore = 1;
+                else {
+                    accum += u_chanceLapis;
+                    if (r < accum) ore = 2;
+                    else {
+                        accum += u_chanceGold;
+                        if (r < accum) ore = 3;
+                        else {
+                            accum += u_chanceRedstone;
+                            if (r < accum) ore = 4;
+                            else {
+                                accum += u_chanceDiamond;
+                                if (r < accum) ore = 5;
+                                else {
+                                    accum += u_chanceEmerald;
+                                    if (r < accum) ore = 6;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             
             if (ore < 0) return getTex(uv, -1).rgb;
             return mix(getTex(uv, -1).rgb, getTex(uv, ore).rgb, 1.0);
@@ -548,6 +590,7 @@
                 gl.uniform1f(NU.u_brightnessMult, cssNum('--brightness-mult', 1.5));
                 gl.uniform1f(NU.u_tunnelRadius, cssNum('--tunnel-radius', 0.8));
                 gl.uniform1f(NU.u_seed, getSeedValue());
+                
                 gl.uniform1f(NU.u_chanceCoal, cssNum('--chance-coal', 10));
                 gl.uniform1f(NU.u_chanceIron, cssNum('--chance-iron', 5));
                 gl.uniform1f(NU.u_chanceLapis, cssNum('--chance-lapis', 3));
@@ -591,20 +634,20 @@
         ];
 
         var oreChances = [
-            ['--chance-coal','Уголь',0,100,1,10],
-            ['--chance-iron','Железо',0,100,1,5],
-            ['--chance-lapis','Лазурит',0,100,1,3],
-            ['--chance-gold','Золото',0,100,1,3],
-            ['--chance-redstone','Редстоун',0,100,1,2],
-            ['--chance-diamond','Алмазы',0,100,1,1],
-            ['--chance-emerald','Изумруды',0,100,1,1],
+            ['--chance-coal','Уголь',10],
+            ['--chance-iron','Железо',5],
+            ['--chance-lapis','Лазурит',3],
+            ['--chance-gold','Золото',3],
+            ['--chance-redstone','Редстоун',2],
+            ['--chance-diamond','Алмазы',1],
+            ['--chance-emerald','Изумруды',1],
         ];
 
         cssVars.forEach(function(v) {
             document.documentElement.style.setProperty(v[0], v[5]);
         });
         oreChances.forEach(function(v) {
-            document.documentElement.style.setProperty(v[0], v[5]);
+            document.documentElement.style.setProperty(v[0], v[3]);
         });
 
         var slidersDiv = document.getElementById('sliders');
@@ -647,11 +690,10 @@
 
         var oreSlidersDiv = document.getElementById('ore-sliders');
         oreChances.forEach(function(v) {
-            var g = document.createElement('div'); 
-            g.className = 'slider-group';
-            g.style.marginBottom = '8px';
-            g.innerHTML = '<label style="align-items:center;"><span style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:16px;height:16px;background-image:url(assets/'+v[0].replace('--chance-','')+'_ore.png);background-size:cover;image-rendering:pixelated;border-radius:2px;"></span>'+v[1]+'</span><span class="val" id="val'+v[0]+'">'+v[5]+'%</span></label><input type="range" data-css="'+v[0]+'" min="'+v[2]+'" max="'+v[3]+'" step="'+v[4]+'" value="'+v[5]+'">';
-            oreSlidersDiv.appendChild(g);
+            var row = document.createElement('div');
+            row.className = 'ore-row';
+            row.innerHTML = '<div class="ore-icon" style="background-image:url(assets/'+v[0].replace('--chance-','')+'_ore.png)"></div><span class="ore-label">'+v[1]+'</span><input type="number" class="ore-input" data-css="'+v[0]+'" value="'+v[3]+'" min="0" step="0.1"><span style="font-size:10px;">%</span>';
+            oreSlidersDiv.appendChild(row);
         });
 
         document.querySelectorAll('input[type="range"]').forEach(function(s) {
@@ -659,13 +701,15 @@
                 var v = parseFloat(s.value);
                 document.documentElement.style.setProperty(s.dataset.css, v);
                 var valEl = document.getElementById('val'+s.dataset.css);
-                if (valEl) {
-                    if (s.dataset.css.includes('chance')) {
-                        valEl.textContent = v + '%';
-                    } else {
-                        valEl.textContent = v;
-                    }
-                }
+                if (valEl) valEl.textContent = v;
+                updateCssOutput();
+            });
+        });
+
+        document.querySelectorAll('.ore-input').forEach(function(input) {
+            input.addEventListener('input', function() {
+                var v = parseFloat(this.value) || 0;
+                document.documentElement.style.setProperty(this.dataset.css, v);
                 updateCssOutput();
             });
         });
@@ -680,11 +724,9 @@
             });
             
             oreChances.forEach(function(v) {
-                document.documentElement.style.setProperty(v[0], v[5]);
-                var slider = document.querySelector('input[data-css="'+v[0]+'"]');
-                if (slider) slider.value = v[5];
-                var valEl = document.getElementById('val'+v[0]);
-                if (valEl) valEl.textContent = v[5] + '%';
+                document.documentElement.style.setProperty(v[0], v[3]);
+                var input = document.querySelector('.ore-input[data-css="'+v[0]+'"]');
+                if (input) input.value = v[3];
             });
             
             seedInput.value = '';
