@@ -1,0 +1,126 @@
+:root {
+  --bg: #f8f8f8;
+  --text: #1a1a1a;
+  --muted: #999;
+  --card-bg: #fff;
+  --radius: 10px;
+  --max-width: 440px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.4;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+}
+
+/* Шапка */
+header {
+  width: 100%;
+  max-width: var(--max-width);
+  padding: 40px 0 28px;
+  text-align: center;
+}
+
+.domain {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: lowercase;
+}
+
+/* Сетка карточек */
+main {
+  width: 100%;
+  max-width: var(--max-width);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 40px;
+}
+
+/* Карточка */
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.card:active {
+  transform: scale(0.99);
+}
+
+/* Превью */
+.card-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: fill;
+  background: #f0f0f0;
+  display: block;
+}
+
+/* Текст */
+.card-body {
+  padding: 12px 14px 14px;
+  text-align: center;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+
+.card-desc {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* Подвал */
+footer {
+  padding: 24px 0;
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Пусто */
+.empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+}
+
+/* Мобилки */
+@media (max-width: 400px) {
+  header { padding: 28px 0 20px; }
+  .domain { font-size: 12px; }
+  .card-body { padding: 10px 12px; }
+  .card-title { font-size: 13px; }
+  .card-desc { font-size: 11px; }
+}
