@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Tunnel Minecraft",
+    "description": "Крутая заставка в стиле шахты маинкрафт.",
+    "url": "/tunnel",
+    "image": "/tunnel/prew.png"
+  },
+  {
+    "title": "parkour Minecraft",
+    "description": "Заставка автоматического паркура. Бесконечный.",
+    "url": "/parkour",
+    "image": "none"
+  }
+]
