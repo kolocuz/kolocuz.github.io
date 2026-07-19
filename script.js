@@ -10,7 +10,7 @@ fetch('links.json')
       return;
     }
     hub.innerHTML = links.map(link => `
-      <a href="${link.url}" class="card">
+      <a href="${link.url}" class="card" target="_blank" rel="noopener noreferrer">
         <img
           src="${link.image}"
           alt=""
