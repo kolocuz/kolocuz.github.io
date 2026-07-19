@@ -5,36 +5,696 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minecraft Infinite Canyon Parkour</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #000;
-        }
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; }
+        canvas { display: block; position: absolute; top: 0; left: 0; }
     </style>
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
-            }
-        }
+        { "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js" } }
     </script>
 </head>
 <body>
-    <script type="module">
-        import * as THREE from 'three';
+<script type="module">
+import * as THREE from 'three';
 
-        const tempDir1 = new THREE.Vector3();
-        const tempDir2 = new THREE.Vector3();
-        const tempBlendedDir = new THREE.Vector3();
-        const tempLookTarget = new THREE.Vector3();
-        const cloudTempMatrix = new THREE.Matrix4();
+// ─────────────────────────────────────
+// Переиспользуемые объекты
+// ─────────────────────────────────────
+const tempDir1 = new THREE.Vector3();
+const tempDir2 = new THREE.Vector3();
+const tempBlendedDir = new THREE.Vector3();
+const tempLookTarget = new THREE.Vector3();
+const cloudTempMatrix = new THREE.Matrix4();
+const cloudTempPosition = new THREE.Vector3();
+const canyonTempMatrix = new THREE.Matrix4();
+
+// ─────────────────────────────────────
+// Текстуры (без изменений)
+// ─────────────────────────────────────
+function createPixelTexture(type) {
+    const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 16;
+    const ctx = canvas.getContext('2d');
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+        let r, g, b;
+        if (type === 'top') { const n = Math.random()*30-15; r=92+n; g=142+n; b=50+n; }
+        else if (type === 'bottom') { const n = Math.random()*20-10; r=134+n; g=96+n; b=67+n; }
+        else {
+            const isGrass = y<4 || (y===4 && Math.random()>0.4) || (y===5 && Math.random()>0.8);
+            if (isGrass) { const n=Math.random()*30-15; r=92+n; g=142+n; b=50+n; }
+            else { const n=Math.random()*20-10; r=134+n; g=96+n; b=67+n; }
+        }
+        ctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+        ctx.fillRect(x, y, 1, 1);
+    }
+    const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    return tex;
+}
+function createStoneTexture() {
+    const canvas = document.createElement('canvas'); canvas.width=16; canvas.height=16;
+    const ctx = canvas.getContext('2d');
+    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
+        const gray = 115 + Math.random()*24-12;
+        ctx.fillStyle = `rgb(${gray},${gray},${gray})`; ctx.fillRect(x,y,1,1);
+    }
+    const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    return tex;
+}
+function createLampTexture(on) {
+    const canvas = document.createElement('canvas'); canvas.width=16; canvas.height=16;
+    const ctx = canvas.getContext('2d');
+    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
+        const border = x<2 || x>13 || y<2 || y>13;
+        if (border) ctx.fillStyle = '#5a3a1a';
+        else if (on) ctx.fillStyle = `rgb(${215+Math.random()*40},${195+Math.random()*40},${100+Math.random()*40})`;
+        else ctx.fillStyle = '#4a3a2a';
+        ctx.fillRect(x,y,1,1);
+    }
+    const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    return tex;
+}
+function createWaterTexture() {
+    const canvas = document.createElement('canvas'); canvas.width=16; canvas.height=16;
+    const ctx = canvas.getContext('2d');
+    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
+        const n = Math.random()*16-8;
+        ctx.fillStyle = `rgb(${40+n},${90+n},${205+n})`; ctx.fillRect(x,y,1,1);
+    }
+    const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+}
+function createSunTexture() {
+    const canvas = document.createElement('canvas'); canvas.width=16; canvas.height=16;
+    const ctx = canvas.getContext('2d');
+    for (let y=0;y<16;y++) for (let x=0;x<16;x++) {
+        let r=255,g=190,b=60;
+        if (x>=2 && x<=13 && y>=2 && y<=13) { r=255;g=245;b=195; }
+        ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fillRect(x,y,1,1);
+    }
+    const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    return tex;
+}
+
+// ─────────────────────────────────────
+// Сцена, камера, рендер
+// ─────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x6ca1ff);
+scene.fog = new THREE.Fog(0x6ca1ff, 80, 210);
+const camera = new THREE.PerspectiveCamera(85, innerWidth/innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+const dummy = new THREE.Object3D();
+
+// ─────────────────────────────────────
+// Освещение
+// ─────────────────────────────────────
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+scene.add(ambientLight);
+const hemiLight = new THREE.HemisphereLight(0xa0c8ff, 0x444444, 0.5);
+scene.add(hemiLight);
+const sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024,1024);
+sunLight.shadow.camera.near=10; sunLight.shadow.camera.far=1000;
+sunLight.shadow.camera.left=-40; sunLight.shadow.camera.right=40;
+sunLight.shadow.camera.top=40; sunLight.shadow.camera.bottom=-40;
+sunLight.shadow.bias=-0.0005; sunLight.shadow.radius=4;
+scene.add(sunLight); scene.add(sunLight.target);
+const sunMesh = new THREE.Mesh(new THREE.PlaneGeometry(16,16), new THREE.MeshBasicMaterial({map:createSunTexture(), fog:false, side:THREE.DoubleSide}));
+scene.add(sunMesh);
+
+const glowLights = [];
+for (let i = 0; i < 5; i++) {
+    const light = new THREE.PointLight(0xffaa44, 1.5, 15);
+    scene.add(light);
+    glowLights.push(light);
+}
+
+// ─────────────────────────────────────
+// Облака
+// ─────────────────────────────────────
+const cloudPattern = [
+    [0,0,1,1,1,0,0,0,0,1,1,1,1,0,0,0],[0,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0],
+    [1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,0,0,1,1,1,1,1,0,0],
+    [0,1,1,1,1,1,0,0,0,0,1,1,1,0,0,0],[0,0,1,1,1,0,0,0,1,1,0,0,0,0,1,1],
+    [0,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1],[1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1],[0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,1,1,1,1,0,0,1,1,1,1,0,0,0],[0,0,0,1,1,1,0,0,0,0,1,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],[0,1,1,1,0,0,0,1,1,1,1,1,1,1,0,0],
+    [1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0]
+];
+const cloudScale = 8, maxCloudInstances = 4000;
+const cloudGeo = new THREE.BoxGeometry(cloudScale, 1.5, cloudScale);
+const cloudDepthMat = new THREE.MeshBasicMaterial({colorWrite:false, depthWrite:true});
+const cloudColorMat = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.5, fog:true, depthWrite:false, depthFunc:THREE.LessEqual});
+const cloudDepth = new THREE.InstancedMesh(cloudGeo, cloudDepthMat, maxCloudInstances);
+const cloudColor = new THREE.InstancedMesh(cloudGeo, cloudColorMat, maxCloudInstances);
+scene.add(cloudDepth); scene.add(cloudColor);
+let cloudOffsetX = 0;
+
+// ─────────────────────────────────────
+// Паркур (параметры)
+// ─────────────────────────────────────
+const parkourGroup = new THREE.Group(); scene.add(parkourGroup);
+const maxActiveBlocks = 25, blocksBehind = 8, futurePathSize = 50; // увеличен буфер будущего
+let blocksData = [], blockMeshes = [], lampMeshes = [];
+let canyonData = []; // массив активных чанков
+const totalChunks = maxActiveBlocks + blocksBehind; // 33 чанка
+
+let jumpProgress = 0;
+const speed = 1.67, maxJumpH = 1.25, rotSmooth = 7.0;
+
+// Материалы
+const materials = [
+    new THREE.MeshStandardMaterial({map:createPixelTexture('side'), roughness:0.9, metalness:0}),
+    new THREE.MeshStandardMaterial({map:createPixelTexture('side'), roughness:0.9, metalness:0}),
+    new THREE.MeshStandardMaterial({map:createPixelTexture('top'), roughness:0.95, metalness:0}),
+    new THREE.MeshStandardMaterial({map:createPixelTexture('bottom'), roughness:0.9, metalness:0}),
+    new THREE.MeshStandardMaterial({map:createPixelTexture('side'), roughness:0.9, metalness:0}),
+    new THREE.MeshStandardMaterial({map:createPixelTexture('side'), roughness:0.9, metalness:0})
+];
+const blockGeo = new THREE.BoxGeometry(1,1,1);
+const lampOffMaterial = new THREE.MeshBasicMaterial({map:createLampTexture(false)});
+const lampOnMaterial = new THREE.MeshBasicMaterial({map:createLampTexture(true)});
+
+// Вода
+const waterTexTop = createWaterTexture();
+const waterTexSide = waterTexTop.clone();
+waterTexSide.rotation = Math.PI/2; waterTexSide.center.set(0.5,0.5); waterTexSide.needsUpdate = true;
+const waterSideMat = new THREE.MeshStandardMaterial({map:waterTexSide, transparent:true, opacity:0.65, roughness:0.1, metalness:0.1, fog:true, depthWrite:false, depthFunc:THREE.LessEqual});
+const waterTopMat = new THREE.MeshStandardMaterial({map:waterTexTop, transparent:true, opacity:0.65, roughness:0.1, metalness:0.1, fog:true, depthWrite:false, depthFunc:THREE.LessEqual});
+const waterMats = [waterSideMat,waterSideMat,waterTopMat,waterTopMat,waterSideMat,waterSideMat];
+const waterDepthMat = new THREE.MeshBasicMaterial({colorWrite:false, depthWrite:true});
+
+// ─────────────────────────────────────
+// Vertex AO (без изменений)
+// ─────────────────────────────────────
+const boxAO = new THREE.BoxGeometry(1,1,1);
+const aoPos = boxAO.getAttribute('position'), aoNorm = boxAO.getAttribute('normal');
+const vOff = [], fNorm = [];
+for (let i=0; i<24; i++) {
+    vOff.push(new THREE.Vector3(aoPos.getX(i), aoPos.getY(i), aoPos.getZ(i)));
+    fNorm.push(new THREE.Vector3(aoNorm.getX(i), aoNorm.getY(i), aoNorm.getZ(i)));
+}
+const solidBlocks = new Set();
+const coordKey = (x,y,z) => (x+100000)*100000000 + (z+100000)*1000 + (y+100);
+function getAOAt(x,y,z, fn, vo) {
+    let s1x=x,s1y=y,s1z=z, s2x=x,s2y=y,s2z=z, cx=x,cy=y,cz=z;
+    s1x+=fn.x; s1y+=fn.y; s1z+=fn.z;
+    s2x+=fn.x; s2y+=fn.y; s2z+=fn.z;
+    cx+=fn.x; cy+=fn.y; cz+=fn.z;
+    if (fn.x!==0) { s1y+=Math.sign(vo.y); s2z+=Math.sign(vo.z); cy+=Math.sign(vo.y); cz+=Math.sign(vo.z); }
+    else if (fn.y!==0) { s1x+=Math.sign(vo.x); s2z+=Math.sign(vo.z); cx+=Math.sign(vo.x); cz+=Math.sign(vo.z); }
+    else { s1x+=Math.sign(vo.x); s2y+=Math.sign(vo.y); cx+=Math.sign(vo.x); cy+=Math.sign(vo.y); }
+    const s1 = solidBlocks.has(coordKey(s1x,s1y,s1z));
+    const s2 = solidBlocks.has(coordKey(s2x,s2y,s2z));
+    const c = solidBlocks.has(coordKey(cx,cy,cz));
+    if (s1&&s2) return 0.55;
+    const cnt = (s1?1:0)+(s2?1:0)+(c?1:0);
+    if (cnt===3) return 0.55;
+    if (cnt===2) return 0.70;
+    if (cnt===1) return 0.85;
+    return 1.0;
+}
+function patchMatAO(mat) {
+    mat.onBeforeCompile = shader => {
+        shader.vertexShader = shader.vertexShader.replace('#include <common>',
+            `#include <common>
+             attribute float vertexIndex;
+             attribute vec4 aAO0; attribute vec4 aAO1; attribute vec4 aAO2;
+             attribute vec4 aAO3; attribute vec4 aAO4; attribute vec4 aAO5;
+             varying float vAO;`);
+        shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>',
+            `#include <begin_vertex>
+             float ao=1.0; int idx=int(vertexIndex);
+             if (idx<4) { if (idx==0) ao=aAO0.x; else if (idx==1) ao=aAO0.y; else if (idx==2) ao=aAO0.z; else ao=aAO0.w; }
+             else if (idx<8) { if (idx==4) ao=aAO1.x; else if (idx==5) ao=aAO1.y; else if (idx==6) ao=aAO1.z; else ao=aAO1.w; }
+             else if (idx<12) { if (idx==8) ao=aAO2.x; else if (idx==9) ao=aAO2.y; else if (idx==10) ao=aAO2.z; else ao=aAO2.w; }
+             else if (idx<16) { if (idx==12) ao=aAO3.x; else if (idx==13) ao=aAO3.y; else if (idx==14) ao=aAO3.z; else ao=aAO3.w; }
+             else if (idx<20) { if (idx==16) ao=aAO4.x; else if (idx==17) ao=aAO4.y; else if (idx==18) ao=aAO4.z; else ao=aAO4.w; }
+             else { if (idx==20) ao=aAO5.x; else if (idx==21) ao=aAO5.y; else if (idx==22) ao=aAO5.z; else ao=aAO5.w; }
+             vAO = ao;`);
+        shader.fragmentShader = shader.fragmentShader.replace('#include <common>',
+            `#include <common> varying float vAO;`);
+        shader.fragmentShader = shader.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );',
+            `vec4 diffuseColor = vec4( diffuse * vAO, opacity );`);
+    };
+}
+const cGrassMats = materials.map(m => m.clone()); cGrassMats.forEach(m=>patchMatAO(m));
+const cDirtMat = new THREE.MeshStandardMaterial({map:createPixelTexture('bottom'), roughness:0.9, metalness:0}); patchMatAO(cDirtMat);
+const cStoneMat = new THREE.MeshStandardMaterial({map:createStoneTexture(), roughness:0.9, metalness:0}); patchMatAO(cStoneMat);
+const vtxIdx = new Float32Array(24); for(let i=0;i<24;i++) vtxIdx[i]=i;
+blockGeo.setAttribute('vertexIndex', new THREE.BufferAttribute(vtxIdx,1));
+const grassGeo = blockGeo.clone(), dirtGeo = blockGeo.clone(), stoneGeo = blockGeo.clone();
+
+// Максимальные количества инстансов (с запасом)
+const MAX_INSTANCES = 50000;
+const canyonGrass = new THREE.InstancedMesh(grassGeo, cGrassMats, MAX_INSTANCES);
+const canyonDirt = new THREE.InstancedMesh(dirtGeo, cDirtMat, MAX_INSTANCES);
+const canyonStone = new THREE.InstancedMesh(stoneGeo, cStoneMat, MAX_INSTANCES);
+const canyonWaterD = new THREE.InstancedMesh(blockGeo, waterDepthMat, MAX_INSTANCES);
+const canyonWaterC = new THREE.InstancedMesh(blockGeo, waterMats, MAX_INSTANCES);
+canyonGrass.castShadow = canyonGrass.receiveShadow = true;
+canyonDirt.castShadow = canyonDirt.receiveShadow = true;
+canyonStone.castShadow = canyonStone.receiveShadow = true;
+canyonWaterC.receiveShadow = true;
+scene.add(canyonGrass); scene.add(canyonDirt); scene.add(canyonStone);
+scene.add(canyonWaterD); scene.add(canyonWaterC);
+
+// AO буферы (инициализация)
+function setupAOMesh(geo, max) {
+    const a = ()=>new THREE.InstancedBufferAttribute(new Float32Array(max*4),4);
+    const a0=a(),a1=a(),a2=a(),a3=a(),a4=a(),a5=a();
+    [a0,a1,a2,a3,a4,a5].forEach(a=>a.array.fill(1.0));
+    geo.setAttribute('aAO0',a0); geo.setAttribute('aAO1',a1); geo.setAttribute('aAO2',a2);
+    geo.setAttribute('aAO3',a3); geo.setAttribute('aAO4',a4); geo.setAttribute('aAO5',a5);
+}
+setupAOMesh(grassGeo, MAX_INSTANCES);
+setupAOMesh(dirtGeo, MAX_INSTANCES);
+setupAOMesh(stoneGeo, MAX_INSTANCES);
+
+// ─────────────────────────────────────
+// Генерация пути и каньона (надёжная)
+// ─────────────────────────────────────
+const generatedColumns = new Set();
+let generatorYaw = 0;
+
+function calculateNextPosition(prev) {
+    const r = Math.random(); let dy = 0;
+    if (prev.y > 2) { if (r < 0.45) dy = -1; }
+    else if (prev.y < -2) { if (r < 0.45) dy = 1; }
+    else { if (r < 0.25) dy = -1; else if (r < 0.5) dy = 1; }
+    generatorYaw += (Math.random()-0.5)*0.7;
+    prev.x += 4 * Math.cos(generatorYaw);
+    prev.z += 4 * Math.sin(generatorYaw);
+    prev.y += dy;
+    prev.x = Math.round(prev.x); prev.y = Math.round(prev.y); prev.z = Math.round(prev.z);
+}
+
+function generateCanyonData(gridPos, index) {
+    const data = { grass:[], dirt:[], stone:[], water:[], grassAO:[], dirtAO:[], stoneAO:[] };
+    const radius = 10;
+    const sX=gridPos.x-radius, eX=gridPos.x+radius, sZ=gridPos.z-radius, eZ=gridPos.z+radius;
+    const searchStart = Math.max(0, index - 30);
+    const searchEnd = Math.min(blocksData.length - 1, index + 30);
+    for (let cx=sX; cx<=eX; cx++) for (let cz=sZ; cz<=eZ; cz++) {
+        const key = cx+','+cz;
+        if (generatedColumns.has(key)) continue;
+        let minDistSq = Infinity;
+        for (let i=searchStart; i<=searchEnd; i++) {
+            const dx=cx-blocksData[i].x, dz=cz-blocksData[i].z;
+            const dSq = dx*dx+dz*dz;
+            if (dSq < minDistSq) minDistSq = dSq;
+        }
+        const minDist = Math.sqrt(minDistSq);
+        generatedColumns.add(key);
+        if (minDist < 3.5) {
+            const waterY = gridPos.y - 6;
+            data.water.push(new THREE.Vector3(cx, waterY, cz));
+            data.dirt.push(new THREE.Vector3(cx, waterY - 1, cz));
+            data.dirt.push(new THREE.Vector3(cx, waterY - 2, cz));
+        } else {
+            const noise = Math.sin(cx*0.12)*Math.cos(cz*0.12)*3 + Math.sin(cx*0.04)*4;
+            const h = minDist<7.5 ? (minDist-3.5)*2.5 : 10 + (minDist-7.5)*0.3;
+            const topY = Math.round(gridPos.y-1 + h + noise);
+            const clampY = Math.max(gridPos.y-6, Math.min(gridPos.y+11, topY));
+            for (let y=gridPos.y-7; y<=clampY; y++) {
+                const p = new THREE.Vector3(cx, y, cz);
+                if (y === clampY) data.grass.push(p);
+                else if (y >= clampY-2) data.dirt.push(p);
+                else data.stone.push(p);
+            }
+        }
+    }
+    // Вычисляем AO для новых блоков
+    data.grassAO = data.grass.map(p => { const a=new Float32Array(24); for(let k=0;k<24;k++) a[k]=getAOAt(p.x,p.y,p.z,fNorm[k],vOff[k]); return a; });
+    data.dirtAO = data.dirt.map(p => { const a=new Float32Array(24); for(let k=0;k<24;k++) a[k]=getAOAt(p.x,p.y,p.z,fNorm[k],vOff[k]); return a; });
+    data.stoneAO = data.stone.map(p => { const a=new Float32Array(24); for(let k=0;k<24;k++) a[k]=getAOAt(p.x,p.y,p.z,fNorm[k],vOff[k]); return a; });
+    return data;
+}
+
+// Полная пересборка инстансов из всех активных чанков
+function rebuildCanyonMesh() {
+    let grassCount = 0, dirtCount = 0, stoneCount = 0, waterCount = 0;
+    const grassAO0 = grassGeo.getAttribute('aAO0').array;
+    const grassAO1 = grassGeo.getAttribute('aAO1').array;
+    const grassAO2 = grassGeo.getAttribute('aAO2').array;
+    const grassAO3 = grassGeo.getAttribute('aAO3').array;
+    const grassAO4 = grassGeo.getAttribute('aAO4').array;
+    const grassAO5 = grassGeo.getAttribute('aAO5').array;
+    const dirtAO0 = dirtGeo.getAttribute('aAO0').array;
+    const dirtAO1 = dirtGeo.getAttribute('aAO1').array;
+    const dirtAO2 = dirtGeo.getAttribute('aAO2').array;
+    const dirtAO3 = dirtGeo.getAttribute('aAO3').array;
+    const dirtAO4 = dirtGeo.getAttribute('aAO4').array;
+    const dirtAO5 = dirtGeo.getAttribute('aAO5').array;
+    const stoneAO0 = stoneGeo.getAttribute('aAO0').array;
+    const stoneAO1 = stoneGeo.getAttribute('aAO1').array;
+    const stoneAO2 = stoneGeo.getAttribute('aAO2').array;
+    const stoneAO3 = stoneGeo.getAttribute('aAO3').array;
+    const stoneAO4 = stoneGeo.getAttribute('aAO4').array;
+    const stoneAO5 = stoneGeo.getAttribute('aAO5').array;
+
+    for (const chunk of canyonData) {
+        // Трава
+        for (let j=0; j<chunk.grass.length; j++) {
+            if (grassCount >= MAX_INSTANCES) break;
+            const p = chunk.grass[j];
+            canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+            canyonGrass.setMatrixAt(grassCount, canyonTempMatrix);
+            const ao = chunk.grassAO[j];
+            const base = grassCount*4;
+            for (let k=0; k<24; k++) {
+                const val = ao[k];
+                if (k<4) grassAO0[base+(k%4)] = val;
+                else if (k<8) grassAO1[base+(k%4)] = val;
+                else if (k<12) grassAO2[base+(k%4)] = val;
+                else if (k<16) grassAO3[base+(k%4)] = val;
+                else if (k<20) grassAO4[base+(k%4)] = val;
+                else grassAO5[base+(k%4)] = val;
+            }
+            grassCount++;
+        }
+        // Земля
+        for (let j=0; j<chunk.dirt.length; j++) {
+            if (dirtCount >= MAX_INSTANCES) break;
+            const p = chunk.dirt[j];
+            canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+            canyonDirt.setMatrixAt(dirtCount, canyonTempMatrix);
+            const ao = chunk.dirtAO[j];
+            const base = dirtCount*4;
+            for (let k=0; k<24; k++) {
+                const val = ao[k];
+                if (k<4) dirtAO0[base+(k%4)] = val;
+                else if (k<8) dirtAO1[base+(k%4)] = val;
+                else if (k<12) dirtAO2[base+(k%4)] = val;
+                else if (k<16) dirtAO3[base+(k%4)] = val;
+                else if (k<20) dirtAO4[base+(k%4)] = val;
+                else dirtAO5[base+(k%4)] = val;
+            }
+            dirtCount++;
+        }
+        // Камень
+        for (let j=0; j<chunk.stone.length; j++) {
+            if (stoneCount >= MAX_INSTANCES) break;
+            const p = chunk.stone[j];
+            canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+            canyonStone.setMatrixAt(stoneCount, canyonTempMatrix);
+            const ao = chunk.stoneAO[j];
+            const base = stoneCount*4;
+            for (let k=0; k<24; k++) {
+                const val = ao[k];
+                if (k<4) stoneAO0[base+(k%4)] = val;
+                else if (k<8) stoneAO1[base+(k%4)] = val;
+                else if (k<12) stoneAO2[base+(k%4)] = val;
+                else if (k<16) stoneAO3[base+(k%4)] = val;
+                else if (k<20) stoneAO4[base+(k%4)] = val;
+                else stoneAO5[base+(k%4)] = val;
+            }
+            stoneCount++;
+        }
+        // Вода
+        for (let j=0; j<chunk.water.length; j++) {
+            if (waterCount >= MAX_INSTANCES) break;
+            const p = chunk.water[j];
+            canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+            canyonWaterD.setMatrixAt(waterCount, canyonTempMatrix);
+            canyonWaterC.setMatrixAt(waterCount, canyonTempMatrix);
+            waterCount++;
+        }
+    }
+
+    canyonGrass.count = grassCount;
+    canyonGrass.instanceMatrix.needsUpdate = true;
+    grassGeo.getAttribute('aAO0').needsUpdate = true;
+    grassGeo.getAttribute('aAO1').needsUpdate = true;
+    grassGeo.getAttribute('aAO2').needsUpdate = true;
+    grassGeo.getAttribute('aAO3').needsUpdate = true;
+    grassGeo.getAttribute('aAO4').needsUpdate = true;
+    grassGeo.getAttribute('aAO5').needsUpdate = true;
+
+    canyonDirt.count = dirtCount;
+    canyonDirt.instanceMatrix.needsUpdate = true;
+    dirtGeo.getAttribute('aAO0').needsUpdate = true;
+    dirtGeo.getAttribute('aAO1').needsUpdate = true;
+    dirtGeo.getAttribute('aAO2').needsUpdate = true;
+    dirtGeo.getAttribute('aAO3').needsUpdate = true;
+    dirtGeo.getAttribute('aAO4').needsUpdate = true;
+    dirtGeo.getAttribute('aAO5').needsUpdate = true;
+
+    canyonStone.count = stoneCount;
+    canyonStone.instanceMatrix.needsUpdate = true;
+    stoneGeo.getAttribute('aAO0').needsUpdate = true;
+    stoneGeo.getAttribute('aAO1').needsUpdate = true;
+    stoneGeo.getAttribute('aAO2').needsUpdate = true;
+    stoneGeo.getAttribute('aAO3').needsUpdate = true;
+    stoneGeo.getAttribute('aAO4').needsUpdate = true;
+    stoneGeo.getAttribute('aAO5').needsUpdate = true;
+
+    canyonWaterD.count = waterCount;
+    canyonWaterD.instanceMatrix.needsUpdate = true;
+    canyonWaterC.count = waterCount;
+    canyonWaterC.instanceMatrix.needsUpdate = true;
+}
+
+// Удаление чанка и его блоков из solidBlocks
+function removeChunk(chunk) {
+    for (const p of chunk.grass) solidBlocks.delete(coordKey(p.x,p.y,p.z));
+    for (const p of chunk.dirt) solidBlocks.delete(coordKey(p.x,p.y,p.z));
+    for (const p of chunk.stone) solidBlocks.delete(coordKey(p.x,p.y,p.z));
+    // generatedColumns не удаляем, чтобы не было двойной генерации при перекрытии
+}
+
+// Добавление нового блока и чанка
+function addNewBlock(pos) {
+    const idx = blocksBehind + maxActiveBlocks - 1;
+    const mesh = new THREE.Mesh(blockGeo, materials);
+    mesh.position.copy(blocksData[idx]);
+    mesh.castShadow = mesh.receiveShadow = true;
+    parkourGroup.add(mesh);
+    blockMeshes.push(mesh);
+    const lamp = new THREE.Mesh(blockGeo, lampOffMaterial);
+    lamp.position.copy(blocksData[idx]).add(new THREE.Vector3(0,-1,0));
+    lamp.castShadow = lamp.receiveShadow = true;
+    lamp.userData.lit = false;
+    parkourGroup.add(lamp);
+    lampMeshes.push(lamp);
+
+    const newChunk = generateCanyonData(blocksData[idx], idx);
+    canyonData.push(newChunk);
+    for (const p of newChunk.grass) solidBlocks.add(coordKey(p.x,p.y,p.z));
+    for (const p of newChunk.dirt) solidBlocks.add(coordKey(p.x,p.y,p.z));
+    for (const p of newChunk.stone) solidBlocks.add(coordKey(p.x,p.y,p.z));
+    solidBlocks.add(coordKey(blocksData[idx].x, blocksData[idx].y, blocksData[idx].z));
+    solidBlocks.add(coordKey(blocksData[idx].x, blocksData[idx].y-1, blocksData[idx].z));
+}
+
+// Инициализация паркура
+function generateParkour() {
+    while(parkourGroup.children.length) parkourGroup.remove(parkourGroup.children[0]);
+    blocksData = []; blockMeshes = []; lampMeshes = []; canyonData = [];
+    generatorYaw = 0; generatedColumns.clear(); solidBlocks.clear();
+
+    const totalPoints = blocksBehind + maxActiveBlocks + futurePathSize; // ~83
+    let pos = new THREE.Vector3(0,0,0);
+    for (let i=0; i<totalPoints; i++) {
+        const gp = new THREE.Vector3(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
+        blocksData.push(gp);
+        calculateNextPosition(pos);
+    }
+
+    // Создаём начальные чанки (totalChunks штук)
+    for (let i=0; i<totalChunks; i++) {
+        const chunk = generateCanyonData(blocksData[i], i);
+        canyonData.push(chunk);
+        for (const p of chunk.grass) solidBlocks.add(coordKey(p.x,p.y,p.z));
+        for (const p of chunk.dirt) solidBlocks.add(coordKey(p.x,p.y,p.z));
+        for (const p of chunk.stone) solidBlocks.add(coordKey(p.x,p.y,p.z));
+        solidBlocks.add(coordKey(blocksData[i].x, blocksData[i].y, blocksData[i].z));
+        solidBlocks.add(coordKey(blocksData[i].x, blocksData[i].y-1, blocksData[i].z));
+    }
+
+    // Создаём активные прыжковые блоки и лампы
+    for (let i=blocksBehind; i<blocksBehind+maxActiveBlocks; i++) {
+        const mesh = new THREE.Mesh(blockGeo, materials);
+        mesh.position.copy(blocksData[i]);
+        mesh.castShadow = mesh.receiveShadow = true;
+        parkourGroup.add(mesh);
+        blockMeshes.push(mesh);
+        const lamp = new THREE.Mesh(blockGeo, lampOffMaterial);
+        lamp.position.copy(blocksData[i]).add(new THREE.Vector3(0,-1,0));
+        lamp.castShadow = lamp.receiveShadow = true;
+        lamp.userData.lit = false;
+        parkourGroup.add(lamp);
+        lampMeshes.push(lamp);
+    }
+    if (lampMeshes.length > 0) {
+        lampMeshes[0].material = lampOnMaterial;
+        lampMeshes[0].userData.lit = true;
+    }
+
+    rebuildCanyonMesh();
+    jumpProgress = 0;
+}
+
+// ─────────────────────────────────────
+// Цикл дня и ночи
+// ─────────────────────────────────────
+let dayTime = 6000;
+const dayLength = 24000;
+
+function updateDayNightCycle(dt) {
+    dayTime += dt * 20;
+    if (dayTime >= dayLength) dayTime -= dayLength;
+    const t = dayTime / dayLength;
+    const angle = (t - 0.25) * Math.PI * 2;
+    const sunHeight = Math.sin(angle);
+    const mix = (sunHeight + 1) / 2;
+
+    const sunDist = 200;
+    sunLight.position.set(
+        camera.position.x + Math.cos(angle) * sunDist,
+        camera.position.y + sunHeight * sunDist,
+        camera.position.z
+    );
+    sunLight.target.position.copy(camera.position);
+    sunMesh.position.copy(sunLight.position);
+    sunMesh.lookAt(camera.position);
+
+    const skyDayColor = new THREE.Color(0x6ca1ff);
+    const skyNightColor = new THREE.Color(0x0a0a2e);
+    const fogDayColor = new THREE.Color(0x6ca1ff);
+    const fogNightColor = new THREE.Color(0x0a0a2e);
+    scene.background.copy(skyDayColor).lerp(skyNightColor, 1 - mix);
+    scene.fog.color.copy(fogDayColor).lerp(fogNightColor, 1 - mix);
+    ambientLight.intensity = 0.9*mix + 0.2*(1-mix);
+    hemiLight.intensity = 0.5*mix + 0.15*(1-mix);
+    sunLight.intensity = 0.35*mix + 0.05*(1-mix);
+    cloudColorMat.color.copy(skyDayColor).lerp(new THREE.Color(0x333366), 1 - mix);
+    scene.fog.near = 80 + (1 - mix) * 20;
+
+    const lampIntensity = 1.0 + (1 - mix) * 0.5;
+    for (let i = 0; i < glowLights.length; i++) {
+        if (i < lampMeshes.length) {
+            const lamp = lampMeshes[i];
+            if (lamp.userData.lit) {
+                glowLights[i].position.copy(lamp.position);
+                glowLights[i].intensity = lampIntensity;
+            } else {
+                glowLights[i].intensity = 0;
+            }
+        } else {
+            glowLights[i].intensity = 0;
+        }
+    }
+
+    cloudOffsetX -= 2.0 * dt;
+    const cgx = Math.floor((camera.position.x - cloudOffsetX) / cloudScale);
+    const cgz = Math.floor(camera.position.z / cloudScale);
+    const range = 22; let instId = 0;
+    for (let dx=-range; dx<=range; dx++) {
+        for (let dz=-range; dz<=range; dz++) {
+            const gx=cgx+dx, gz=cgz+dz;
+            const px=((gx%16)+16)%16, pz=((gz%16)+16)%16;
+            if (cloudPattern[pz][px]===1 && instId<maxCloudInstances) {
+                cloudTempPosition.set(gx*cloudScale+cloudOffsetX, 70, gz*cloudScale);
+                cloudTempMatrix.makeTranslation(cloudTempPosition.x, cloudTempPosition.y, cloudTempPosition.z);
+                cloudDepth.setMatrixAt(instId, cloudTempMatrix);
+                cloudColor.setMatrixAt(instId, cloudTempMatrix);
+                instId++;
+            }
+        }
+    }
+    cloudDepth.count = instId; cloudDepth.instanceMatrix.needsUpdate = true;
+    cloudColor.count = instId; cloudColor.instanceMatrix.needsUpdate = true;
+}
+
+// ─────────────────────────────────────
+// Камера (плавный паркур)
+// ─────────────────────────────────────
+function updateCamera(dt) {
+    if (blocksData.length < 3) return;
+    const start = blocksData[blocksBehind], end = blocksData[blocksBehind+1];
+    jumpProgress += dt * speed;
+    if (jumpProgress >= 1) {
+        const oldMesh = blockMeshes.shift(); parkourGroup.remove(oldMesh);
+        const oldLamp = lampMeshes.shift(); parkourGroup.remove(oldLamp);
+        const oldJump = blocksData[0];
+        if (oldJump) {
+            solidBlocks.delete(coordKey(oldJump.x, oldJump.y, oldJump.z));
+            solidBlocks.delete(coordKey(oldJump.x, oldJump.y-1, oldJump.z));
+        }
+        const oldChunk = canyonData.shift();
+        if (oldChunk) removeChunk(oldChunk);
+        blocksData.shift();
+        const lastPos = blocksData[blocksData.length-1].clone();
+        calculateNextPosition(lastPos);
+        blocksData.push(lastPos);
+        solidBlocks.add(coordKey(lastPos.x, lastPos.y, lastPos.z));
+        solidBlocks.add(coordKey(lastPos.x, lastPos.y-1, lastPos.z));
+        addNewBlock(lastPos);
+        if (lampMeshes.length > 0) {
+            lampMeshes[0].material = lampOnMaterial;
+            lampMeshes[0].userData.lit = true;
+        }
+        rebuildCanyonMesh(); // <-- полная пересборка гарантирует отсутствие пропаданий
+        jumpProgress = 0;
+        return;
+    }
+    const eye = 1.42;
+    const cx = THREE.MathUtils.lerp(start.x, end.x, jumpProgress);
+    const cz = THREE.MathUtils.lerp(start.z, end.z, jumpProgress);
+    const sy = start.y+eye, ey = end.y+eye;
+    const linearY = THREE.MathUtils.lerp(sy, ey, jumpProgress);
+    const arc = 4*maxJumpH*jumpProgress*(1-jumpProgress);
+    camera.position.set(cx, linearY+arc, cz);
+    tempDir1.subVectors(end, start).setY(0).normalize();
+    const next = blocksData[blocksBehind+1], far = blocksData[blocksBehind+2];
+    tempDir2.subVectors(far, next).setY(0).normalize();
+    tempBlendedDir.lerpVectors(tempDir1, tempDir2, jumpProgress).normalize();
+    tempLookTarget.copy(camera.position).add(tempBlendedDir);
+    dummy.position.copy(camera.position);
+    dummy.lookAt(tempLookTarget); dummy.rotateY(Math.PI);
+    if (dt===0) camera.quaternion.copy(dummy.quaternion);
+    else camera.quaternion.slerp(dummy.quaternion, Math.min(rotSmooth*dt,1));
+}
+
+// ─────────────────────────────────────
+// Главный цикл
+// ─────────────────────────────────────
+let lastTime = performance.now();
+function animate() {
+    requestAnimationFrame(animate);
+    const now = performance.now();
+    const dt = Math.min((now-lastTime)/1000, 0.1);
+    lastTime = now;
+    updateDayNightCycle(dt);
+    updateCamera(dt);
+    renderer.render(scene, camera);
+}
+window.addEventListener('resize', () => {
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+const texLoader = new THREE.TextureLoader();
+function updTex(type, tex) {
+    tex.magFilter=THREE.NearestFilter; tex.minFilter=THREE.NearestFilter;
+    if (type==='side') [0,1,4,5].forEach(i=>{materials[i].map=tex;materials[i].needsUpdate=true;});
+    else if (type==='top') { materials[2].map=tex; materials[2].needsUpdate=true; }
+    else if (type==='bottom') { materials[3].map=tex; materials[3].needsUpdate=true; }
+}
+texLoader.load('assets/top.png', t=>updTex('top',t));
+texLoader.load('assets/side.png', t=>updTex('side',t));
+texLoader.load('assets/bottom.png', t=>updTex('bottom',t));
+generateParkour();
+animate();
+</script>
+</body>
+</html>        const cloudTempMatrix = new THREE.Matrix4();
         const cloudTempPosition = new THREE.Vector3();
         const canyonTempMatrix = new THREE.Matrix4();
         const canyonTempPosition = new THREE.Vector3();
