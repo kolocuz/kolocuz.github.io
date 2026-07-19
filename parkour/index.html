@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Infinite Canyon Parkour</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'three';
+
+        const tempDir1 = new THREE.Vector3();
+        const tempDir2 = new THREE.Vector3();
+        const tempBlendedDir = new THREE.Vector3();
+        const tempLookTarget = new THREE.Vector3();
+        const cloudTempMatrix = new THREE.Matrix4();
+        const cloudTempPosition = new THREE.Vector3();
+        const canyonTempMatrix = new THREE.Matrix4();
+        const canyonTempPosition = new THREE.Vector3();
+        const treeTempMatrix = new THREE.Matrix4();
+
+        function createPixelTexture(type) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    let r, g, b;
+                    if (type === 'top') {
+                        const noise = Math.random() * 30 - 15;
+                        r = 92 + noise; g = 142 + noise; b = 50 + noise;
+                    } else if (type === 'bottom') {
+                        const noise = Math.random() * 20 - 10;
+                        r = 134 + noise; g = 96 + noise; b = 67 + noise;
+                    } else {
+                        const isGrass = y < 4 || (y === 4 && Math.random() > 0.4) || (y === 5 && Math.random() > 0.8);
+                        if (isGrass) {
+                            const noise = Math.random() * 30 - 15;
+                            r = 92 + noise; g = 142 + noise; b = 50 + noise;
+                        } else {
+                            const noise = Math.random() * 20 - 10;
+                            r = 134 + noise; g = 96 + noise; b = 67 + noise;
+                        }
+                    }
+                    ctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        function createStoneTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    const noise = Math.random() * 24 - 12;
+                    const gray = 115 + noise;
+                    ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        function createGlowstoneTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    let r = 245, g = 150, b = 40;
+                    if ((x+y)%3 === 0 || (x*y)%4 === 0) {
+                        r = 255; g = 210; b = 100;
+                    }
+                    if (x >= 4 && x <= 11 && y >= 4 && y <= 11 && Math.random() > 0.4) {
+                        r = 255; g = 255; b = 180;
+                    }
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        function createWaterTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    const noise = Math.random() * 16 - 8;
+                    const r = 40 + noise;
+                    const g = 90 + noise;
+                    const b = 205 + noise;
+                    ctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            return texture;
+        }
+
+        function createSunTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    let r = 255, g = 190, b = 60;
+                    if (x >= 2 && x <= 13 && y >= 2 && y <= 13) {
+                        r = 255; g = 245; b = 195;
+                    }
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        function createMoonTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    let r = 180, g = 190, b = 210;
+                    if (x >= 3 && x <= 12 && y >= 3 && y <= 12) {
+                        r = 220; g = 225; b = 240;
+                    }
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        function createLogTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    const noise = Math.random() * 20 - 10;
+                    const r = 100 + noise;
+                    const g = 70 + noise;
+                    const b = 40 + noise;
+                    ctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        function createLeavesTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16; canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            for(let y = 0; y < 16; y++) {
+                for(let x = 0; x < 16; x++) {
+                    const noise = Math.random() * 30 - 15;
+                    const r = 40 + noise;
+                    const g = 100 + noise;
+                    const b = 30 + noise;
+                    ctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            return texture;
+        }
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x6ca1ff);
+        scene.fog = new THREE.Fog(0x6ca1ff, 110, 210);
+
+        const camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        const dummy = new THREE.Object3D();
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+
+        const hemiLight = new THREE.HemisphereLight(0x8899cc, 0x665544, 0.5);
+        scene.add(hemiLight);
+
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 0.4);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        sunLight.shadow.camera.left = -50;
+        sunLight.shadow.camera.right = 50;
+        sunLight.shadow.camera.top = 50;
+        sunLight.shadow.camera.bottom = -50;
+        sunLight.shadow.camera.near = 5;
+        sunLight.shadow.camera.far = 500;
+        sunLight.shadow.bias = -0.0002;
+        sunLight.shadow.radius = 2;
+        scene.add(sunLight);
+        scene.add(sunLight.target);
+
+        const moonLight = new THREE.DirectionalLight(0x8899cc, 0.15);
+        scene.add(moonLight);
+        scene.add(moonLight.target);
+
+        const glowLights = [];
+        const maxGlowLights = 5;
+        for (let i = 0; i < maxGlowLights; i++) {
+            const light = new THREE.PointLight(0xffaa44, 0.0, 12);
+            light.decay = 1.5;
+            scene.add(light);
+            glowLights.push(light);
+        }
+
+        const sunGeo = new THREE.PlaneGeometry(16, 16);
+        const sunMat = new THREE.MeshBasicMaterial({
+            map: createSunTexture(),
+            fog: false,
+            side: THREE.DoubleSide,
+            depthTest: true,
+            depthWrite: false
+        });
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.renderOrder = 999;
+        scene.add(sunMesh);
+
+        const moonGeo = new THREE.PlaneGeometry(12, 12);
+        const moonMat = new THREE.MeshBasicMaterial({
+            map: createMoonTexture(),
+            fog: false,
+            side: THREE.DoubleSide,
+            depthTest: true,
+            depthWrite: false
+        });
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonMesh.renderOrder = 999;
+        scene.add(moonMesh);
+
+        const cloudPattern = [
+            [0,0,1,1,1,0,0,0,0,1,1,1,1,0,0,0],
+            [0,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0],
+            [1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,0,0,1,1,1,1,1,0,0],
+            [0,1,1,1,1,1,0,0,0,0,1,1,1,0,0,0],
+            [0,0,1,1,1,0,0,0,1,1,0,0,0,0,1,1],
+            [0,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1],
+            [1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1],
+            [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+            [0,0,1,1,1,1,1,0,0,1,1,1,1,0,0,0],
+            [0,0,0,1,1,1,0,0,0,0,1,1,0,0,0,0],
+            [0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
+            [0,1,1,1,0,0,0,1,1,1,1,1,1,1,0,0],
+            [1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0]
+        ];
+        const cloudScale = 8;
+        const maxCloudInstances = 6000;
+        const cloudGeometry = new THREE.BoxGeometry(cloudScale, 1.5, cloudScale);
+
+        const cloudDepthMaterial = new THREE.MeshBasicMaterial({
+            colorWrite: false,
+            depthWrite: true,
+            transparent: false
+        });
+        const cloudColorMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.5,
+            fog: true,
+            depthWrite: false,
+            depthFunc: THREE.LessEqual
+        });
+
+        const cloudMeshDepth = new THREE.InstancedMesh(cloudGeometry, cloudDepthMaterial, maxCloudInstances);
+        const cloudMeshColor = new THREE.InstancedMesh(cloudGeometry, cloudColorMaterial, maxCloudInstances);
+        scene.add(cloudMeshDepth);
+        scene.add(cloudMeshColor);
+        let cloudOffsetX = 0;
+
+        const parkourGroup = new THREE.Group();
+        scene.add(parkourGroup);
+
+        let blocksData = [];
+        let blockMeshes = [];
+        let glowstoneMeshes = [];
+        let canyonData = [];
+        let treeData = [];
+        let generatedColumns = new Set();
+        let treePositions = new Set();
+
+        const maxActiveBlocks = 45;
+        const blocksBehind = 10;
+        const futurePathSize = 25;
+        let blocksPassed = 0;
+
+        let dayTime = 600;
+        const dayCycleDuration = 120;
+
+        let jumpProgress = 0;
+        const speedMultiplier = 1.67;
+        const maxJumpHeight = 1.25;
+        const rotationSmoothSpeed = 7.0;
+
+        const materials = [
+            new THREE.MeshStandardMaterial({map: createPixelTexture('side'), roughness: 0.85}),
+            new THREE.MeshStandardMaterial({map: createPixelTexture('side'), roughness: 0.85}),
+            new THREE.MeshStandardMaterial({map: createPixelTexture('top'), roughness: 0.9}),
+            new THREE.MeshStandardMaterial({map: createPixelTexture('bottom'), roughness: 0.85}),
+            new THREE.MeshStandardMaterial({map: createPixelTexture('side'), roughness: 0.85}),
+            new THREE.MeshStandardMaterial({map: createPixelTexture('side'), roughness: 0.85})
+        ];
+        const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+
+        const dirtMaterial = new THREE.MeshStandardMaterial({map: createPixelTexture('bottom'), roughness: 0.85});
+        const stoneMaterial = new THREE.MeshStandardMaterial({map: createStoneTexture(), roughness: 0.85});
+        const glowstoneMaterial = new THREE.MeshBasicMaterial({map: createGlowstoneTexture()});
+
+        const waterTexture = createWaterTexture();
+        const waterMaterial = new THREE.MeshStandardMaterial({
+            map: waterTexture,
+            color: 0xffffff,
+            roughness: 0.9,
+            metalness: 0.0,
+            transparent: false,
+            fog: true,
+            depthWrite: true
+        });
+
+        const logTexture = createLogTexture();
+        const logMaterial = new THREE.MeshStandardMaterial({map: logTexture, roughness: 0.9});
+        const leavesTexture = createLeavesTexture();
+        const leavesMaterial = new THREE.MeshStandardMaterial({
+            map: leavesTexture,
+            roughness: 0.8,
+            transparent: true,
+            alphaTest: 0.5
+        });
+
+        const treeLogGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const treeLeavesGeometry = new THREE.BoxGeometry(1, 1, 1);
+
+        const canyonGrassMesh = new THREE.InstancedMesh(blockGeometry, materials, 10000);
+        const canyonDirtMesh = new THREE.InstancedMesh(blockGeometry, dirtMaterial, 20000);
+        const canyonStoneMesh = new THREE.InstancedMesh(blockGeometry, stoneMaterial, 60000);
+        const canyonWaterMesh = new THREE.InstancedMesh(blockGeometry, waterMaterial, 5000);
+        const treeLogMesh = new THREE.InstancedMesh(treeLogGeometry, logMaterial, 5000);
+        const treeLeavesMesh = new THREE.InstancedMesh(treeLeavesGeometry, leavesMaterial, 15000);
+
+        canyonGrassMesh.castShadow = true;
+        canyonGrassMesh.receiveShadow = true;
+        canyonDirtMesh.castShadow = true;
+        canyonDirtMesh.receiveShadow = true;
+        canyonStoneMesh.castShadow = true;
+        canyonStoneMesh.receiveShadow = true;
+        canyonWaterMesh.castShadow = false;
+        canyonWaterMesh.receiveShadow = true;
+        cloudMeshColor.castShadow = false;
+        cloudMeshColor.receiveShadow = false;
+        treeLogMesh.castShadow = true;
+        treeLogMesh.receiveShadow = true;
+        treeLeavesMesh.castShadow = true;
+        treeLeavesMesh.receiveShadow = true;
+
+        scene.add(canyonGrassMesh);
+        scene.add(canyonDirtMesh);
+        scene.add(canyonStoneMesh);
+        scene.add(canyonWaterMesh);
+        scene.add(treeLogMesh);
+        scene.add(treeLeavesMesh);
+
+        let generatorYaw = 0;
+
+        function calculateNextPosition(prevPos) {
+            const randY = Math.random();
+            let dy = 0;
+            if (prevPos.y > 2) {
+                if (randY < 0.45) dy = -1;
+            } else if (prevPos.y < -2) {
+                if (randY < 0.45) dy = 1;
+            } else {
+                if (randY < 0.25) dy = -1;
+                else if (randY < 0.5) dy = 1;
+            }
+            const maxTurn = 0.35;
+            generatorYaw += (Math.random() - 0.5) * maxTurn * 2;
+            const forwardStep = 4;
+            const cosY = Math.cos(generatorYaw);
+            const sinY = Math.sin(generatorYaw);
+            prevPos.x += forwardStep * cosY;
+            prevPos.y += dy;
+            prevPos.z += forwardStep * sinY;
+            prevPos.x = Math.round(prevPos.x);
+            prevPos.y = Math.round(prevPos.y);
+            prevPos.z = Math.round(prevPos.z);
+        }
+
+        function createCanyonAndMeshesForIndex(index) {
+            const gridPos = blocksData[index];
+
+            const mesh = new THREE.Mesh(blockGeometry, materials);
+            mesh.position.copy(gridPos);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            parkourGroup.add(mesh);
+            blockMeshes.push(mesh);
+
+            const glowPos = gridPos.clone();
+            glowPos.y -= 1;
+            const glowMesh = new THREE.Mesh(blockGeometry, glowstoneMaterial);
+            glowMesh.position.copy(glowPos);
+            glowMesh.castShadow = false;
+            glowMesh.receiveShadow = false;
+            parkourGroup.add(glowMesh);
+            glowstoneMeshes.push(glowMesh);
+
+            const localCanyon = { grass: [], dirt: [], stone: [], water: [], coords: [] };
+            const localTrees = { logs: [], leaves: [] };
+            const radius = 12;
+            const startX = gridPos.x - radius;
+            const endX = gridPos.x + radius;
+            const startZ = gridPos.z - radius;
+            const endZ = gridPos.z + radius;
+            const searchStart = Math.max(0, index - 15);
+            const searchEnd = Math.min(blocksData.length - 1, index + 15);
+
+            for (let cx = startX; cx <= endX; cx++) {
+                for (let cz = startZ; cz <= endZ; cz++) {
+                    const coordKey = cx + ',' + cz;
+                    if (generatedColumns.has(coordKey)) continue;
+
+                    let minDistSq = Infinity;
+                    for (let i = searchStart; i <= searchEnd; i++) {
+                        const dx = cx - blocksData[i].x;
+                        const dz = cz - blocksData[i].z;
+                        const dSq = dx * dx + dz * dz;
+                        if (dSq < minDistSq) minDistSq = dSq;
+                    }
+                    const minDist = Math.sqrt(minDistSq);
+                    generatedColumns.add(coordKey);
+                    localCanyon.coords.push(coordKey);
+
+                    if (minDist < 3.5) {
+                        const waterY = gridPos.y - 6;
+                        localCanyon.water.push(new THREE.Vector3(cx, waterY, cz));
+                    } else {
+                        const noise = Math.sin(cx * 0.12) * Math.cos(cz * 0.12) * 3 + Math.sin(cx * 0.04) * 4;
+                        let heightByDist = 0;
+                        if (minDist < 7.5) {
+                            heightByDist = (minDist - 3.5) * 2.5;
+                        } else {
+                            heightByDist = (7.5 - 3.5) * 2.5 + (minDist - 7.5) * 0.3;
+                        }
+                        const topY = Math.round(gridPos.y - 1 + heightByDist + noise);
+                        const clampedTopY = Math.max(gridPos.y - 5, Math.min(gridPos.y + 12, topY));
+                        const bottomY = gridPos.y - 6;
+                        for (let y = bottomY; y <= clampedTopY; y++) {
+                            const p = new THREE.Vector3(cx, y, cz);
+                            if (y === clampedTopY) {
+                                localCanyon.grass.push(p);
+                            } else if (y >= clampedTopY - 2) {
+                                localCanyon.dirt.push(p);
+                            } else {
+                                localCanyon.stone.push(p);
+                            }
+                        }
+
+                        const treeTopY = clampedTopY + 1;
+                        const treeKey = cx + ',' + treeTopY + ',' + cz;
+                        if (minDist > 8 && Math.random() < 0.06 && !treePositions.has(treeKey)) {
+                            let tooClose = false;
+                            for (let i = searchStart; i <= searchEnd; i++) {
+                                const bx = blocksData[i].x;
+                                const bz = blocksData[i].z;
+                                const by = blocksData[i].y;
+                                if (Math.abs(cx - bx) <= 2 && Math.abs(cz - bz) <= 2 && Math.abs(treeTopY - by) <= 5) {
+                                    tooClose = true;
+                                    break;
+                                }
+                            }
+                            if (!tooClose) {
+                                treePositions.add(treeKey);
+                                for (let ty = 0; ty < 4; ty++) {
+                                    localTrees.logs.push(new THREE.Vector3(cx, treeTopY + ty, cz));
+                                }
+                                for (let lx = -2; lx <= 2; lx++) {
+                                    for (let lz = -2; lz <= 2; lz++) {
+                                        for (let ly = 1; ly <= 3; ly++) {
+                                            if (Math.abs(lx) === 2 && Math.abs(lz) === 2 && Math.random() > 0.6) continue;
+                                            if (Math.abs(lx) === 2 && Math.abs(lz) === 2 && ly === 3) continue;
+                                            if (lx === 0 && lz === 0 && ly <= 3) continue;
+                                            localTrees.leaves.push(new THREE.Vector3(cx + lx, treeTopY + ly, cz + lz));
+                                        }
+                                    }
+                                }
+                                localTrees.leaves.push(new THREE.Vector3(cx, treeTopY + 4, cz));
+                            }
+                        }
+                    }
+                }
+            }
+            canyonData.push(localCanyon);
+            treeData.push(localTrees);
+        }
+
+        function addNewBlock(pos) {
+            const newIndex = blocksBehind + maxActiveBlocks - 1;
+            createCanyonAndMeshesForIndex(newIndex);
+        }
+
+        function updateCanyonMeshes() {
+            let grassId = 0, dirtId = 0, stoneId = 0, waterId = 0, logId = 0, leavesId = 0;
+
+            for (let i = 0; i < canyonData.length; i++) {
+                const data = canyonData[i];
+
+                for (const p of data.grass) {
+                    if (grassId >= 10000) break;
+                    canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+                    canyonGrassMesh.setMatrixAt(grassId++, canyonTempMatrix);
+                }
+                for (const p of data.dirt) {
+                    if (dirtId >= 20000) break;
+                    canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+                    canyonDirtMesh.setMatrixAt(dirtId++, canyonTempMatrix);
+                }
+                for (const p of data.stone) {
+                    if (stoneId >= 60000) break;
+                    canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+                    canyonStoneMesh.setMatrixAt(stoneId++, canyonTempMatrix);
+                }
+                for (const p of data.water) {
+                    if (waterId >= 5000) break;
+                    canyonTempMatrix.makeTranslation(p.x, p.y, p.z);
+                    canyonWaterMesh.setMatrixAt(waterId++, canyonTempMatrix);
+                }
+            }
+
+            for (let i = 0; i < treeData.length; i++) {
+                const trees = treeData[i];
+                for (const p of trees.logs) {
+                    if (logId >= 5000) break;
+                    treeTempMatrix.makeTranslation(p.x, p.y, p.z);
+                    treeLogMesh.setMatrixAt(logId++, treeTempMatrix);
+                }
+                for (const p of trees.leaves) {
+                    if (leavesId >= 15000) break;
+                    treeTempMatrix.makeTranslation(p.x, p.y, p.z);
+                    treeLeavesMesh.setMatrixAt(leavesId++, treeTempMatrix);
+                }
+            }
+
+            canyonGrassMesh.count = grassId;
+            canyonGrassMesh.instanceMatrix.needsUpdate = true;
+            canyonDirtMesh.count = dirtId;
+            canyonDirtMesh.instanceMatrix.needsUpdate = true;
+            canyonStoneMesh.count = stoneId;
+            canyonStoneMesh.instanceMatrix.needsUpdate = true;
+            canyonWaterMesh.count = waterId;
+            canyonWaterMesh.instanceMatrix.needsUpdate = true;
+            treeLogMesh.count = logId;
+            treeLogMesh.instanceMatrix.needsUpdate = true;
+            treeLeavesMesh.count = leavesId;
+            treeLeavesMesh.instanceMatrix.needsUpdate = true;
+        }
+
+        function generateParkour() {
+            while(parkourGroup.children.length > 0) parkourGroup.remove(parkourGroup.children[0]);
+            blocksData = [];
+            blockMeshes = [];
+            glowstoneMeshes = [];
+            canyonData = [];
+            treeData = [];
+            generatedColumns.clear();
+            treePositions.clear();
+            generatorYaw = 0;
+
+            const totalPoints = blocksBehind + maxActiveBlocks + futurePathSize;
+            let currentPos = new THREE.Vector3(0, 0, 0);
+            for (let i = 0; i < totalPoints; i++) {
+                const gridPos = new THREE.Vector3(
+                    Math.round(currentPos.x),
+                    Math.round(currentPos.y),
+                    Math.round(currentPos.z)
+                );
+                blocksData.push(gridPos);
+                calculateNextPosition(currentPos);
+            }
+
+            for (let i = 0; i < blocksBehind + maxActiveBlocks; i++) {
+                createCanyonAndMeshesForIndex(i);
+            }
+
+            jumpProgress = 0;
+            updateCanyonMeshes();
+            updateCameraPosition(0);
+        }
+
+        function updateDayNightCycle(deltaTime) {
+            const t = dayTime;
+            const dayFactor = Math.max(0, 1 - Math.abs(t - 600) / 600);
+            const nightFactor = 1 - dayFactor;
+            const dawnDusk = Math.max(0, 1 - Math.abs(t - 300) / 150) * (t < 600 ? 1 : 0);
+            const sunsetFactor = Math.max(0, 1 - Math.abs(t - 900) / 150) * (t > 600 ? 1 : 0);
+
+            const skyColor = new THREE.Color(0x6ca1ff).lerp(new THREE.Color(0x0a0a2e), nightFactor);
+            if (dawnDusk > 0) skyColor.lerp(new THREE.Color(0xffaa66), dawnDusk * 0.5);
+            if (sunsetFactor > 0) skyColor.lerp(new THREE.Color(0xff6644), sunsetFactor * 0.6);
+            scene.background = skyColor;
+            scene.fog.color.copy(skyColor);
+
+            ambientLight.intensity = 0.45 + 0.25 * dayFactor;
+            hemiLight.intensity = 0.35 + 0.2 * dayFactor;
+
+            const angle = (t / 1200) * Math.PI * 2;
+            const sunHeight = Math.sin(angle) * 200;
+            const sunHorizontal = Math.cos(angle) * 150;
+
+            sunLight.position.set(
+                camera.position.x + sunHorizontal,
+                camera.position.y + sunHeight,
+                camera.position.z
+            );
+            sunLight.intensity = 0.4;
+
+            moonLight.position.set(
+                camera.position.x - sunHorizontal,
+                camera.position.y - sunHeight,
+                camera.position.z
+            );
+            moonLight.intensity = 0.15 * nightFactor;
+
+            cloudColorMaterial.color.setHSL(0, 0, 0.8 + 0.2 * dayFactor);
+            cloudColorMaterial.opacity = 0.3 + 0.3 * dayFactor;
+
+            const glowIntensity = 0.5 + 2.5 * nightFactor;
+            for (let i = 0; i < glowLights.length; i++) {
+                if (i < glowstoneMeshes.length) {
+                    glowLights[i].intensity = glowIntensity;
+                    glowLights[i].color.setHSL(0.12, 0.9, 0.5 + 0.3 * nightFactor);
+                }
+            }
+
+            sunMesh.position.copy(sunLight.position);
+            sunMesh.lookAt(camera.position);
+            moonMesh.position.copy(moonLight.position);
+            moonMesh.lookAt(camera.position);
+            moonMesh.visible = nightFactor > 0.3;
+
+            cloudOffsetX -= 2.0 * deltaTime;
+            const centerGridX = Math.floor((camera.position.x - cloudOffsetX) / cloudScale);
+            const centerGridZ = Math.floor(camera.position.z / cloudScale);
+            let instanceId = 0;
+            const range = 28;
+            for (let dx = -range; dx <= range; dx++) {
+                for (let dz = -range; dz <= range; dz++) {
+                    const gx = centerGridX + dx;
+                    const gz = centerGridZ + dz;
+                    const px = ((gx % 16) + 16) % 16;
+                    const pz = ((gz % 16) + 16) % 16;
+                    if (cloudPattern[pz][px] === 1 && instanceId < maxCloudInstances) {
+                        const x = gx * cloudScale + cloudOffsetX;
+                        const z = gz * cloudScale;
+                        cloudTempPosition.set(x, 70, z);
+                        cloudTempMatrix.makeTranslation(cloudTempPosition.x, cloudTempPosition.y, cloudTempPosition.z);
+                        cloudMeshDepth.setMatrixAt(instanceId, cloudTempMatrix);
+                        cloudMeshColor.setMatrixAt(instanceId, cloudTempMatrix);
+                        instanceId++;
+                    }
+                }
+            }
+            cloudMeshDepth.count = instanceId;
+            cloudMeshDepth.instanceMatrix.needsUpdate = true;
+            cloudMeshColor.count = instanceId;
+            cloudMeshColor.instanceMatrix.needsUpdate = true;
+
+            for (let i = 0; i < maxGlowLights; i++) {
+                if (i < glowstoneMeshes.length) {
+                    glowLights[i].position.copy(glowstoneMeshes[i].position);
+                }
+            }
+        }
+
+        function updateCameraPosition(deltaTime) {
+            if (blocksData.length < 3) return;
+            const startBlock = blocksData[blocksBehind];
+            const endBlock = blocksData[blocksBehind + 1];
+            jumpProgress += deltaTime * speedMultiplier;
+
+            if (jumpProgress >= 1) {
+                const oldMesh = blockMeshes.shift();
+                parkourGroup.remove(oldMesh);
+                const oldGlowMesh = glowstoneMeshes.shift();
+                parkourGroup.remove(oldGlowMesh);
+                const oldCanyon = canyonData.shift();
+                if (oldCanyon?.coords) {
+                    for (const key of oldCanyon.coords) generatedColumns.delete(key);
+                }
+                const oldTrees = treeData.shift();
+                if (oldTrees) {
+                    for (const p of oldTrees.logs) treePositions.delete(p.x + ',' + p.y + ',' + p.z);
+                }
+                blocksData.shift();
+                const lastPos = blocksData[blocksData.length - 1].clone();
+                calculateNextPosition(lastPos);
+                blocksData.push(lastPos);
+                addNewBlock(lastPos);
+                updateCanyonMeshes();
+                jumpProgress = 0;
+                blocksPassed++;
+                return;
+            }
+
+            const eyeHeight = 1.42;
+            const currentX = THREE.MathUtils.lerp(startBlock.x, endBlock.x, jumpProgress);
+            const currentZ = THREE.MathUtils.lerp(startBlock.z, endBlock.z, jumpProgress);
+            const startY = startBlock.y + eyeHeight;
+            const endY = endBlock.y + eyeHeight;
+            const linearY = THREE.MathUtils.lerp(startY, endY, jumpProgress);
+            const jumpArc = 4 * maxJumpHeight * jumpProgress * (1 - jumpProgress);
+            const currentY = linearY + jumpArc;
+            camera.position.set(currentX, currentY, currentZ);
+
+            tempDir1.subVectors(endBlock, startBlock);
+            tempDir1.y = 0;
+            tempDir1.normalize();
+
+            const nextBlock = blocksData[blocksBehind + 1];
+            const farBlock = blocksData[blocksBehind + 2];
+            tempDir2.subVectors(farBlock, nextBlock);
+            tempDir2.y = 0;
+            tempDir2.normalize();
+
+            tempBlendedDir.lerpVectors(tempDir1, tempDir2, jumpProgress);
+            tempBlendedDir.normalize();
+            tempLookTarget.copy(camera.position).add(tempBlendedDir);
+            tempLookTarget.y = camera.position.y;
+            dummy.position.copy(camera.position);
+            dummy.lookAt(tempLookTarget);
+            dummy.rotateY(Math.PI);
+
+            if (deltaTime === 0) {
+                camera.quaternion.copy(dummy.quaternion);
+            } else {
+                const slerpFactor = Math.min(rotationSmoothSpeed * deltaTime, 1.0);
+                camera.quaternion.slerp(dummy.quaternion, slerpFactor);
+            }
+        }
+
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const currentTime = performance.now();
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            const limitedDelta = Math.min(deltaTime, 0.1);
+
+            dayTime += (limitedDelta / dayCycleDuration) * 1200;
+            if (dayTime >= 1200) dayTime -= 1200;
+
+            updateDayNightCycle(limitedDelta);
+            updateCameraPosition(limitedDelta);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        generateParkour();
+        animate();
+    </script>
+</body>
+</html>
