@@ -88,11 +88,20 @@
     font-weight: 700;
     width: 42px;
     text-align: center;
+    /* Убираем стрелки */
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
 }
 .val-input:focus {
     outline: none;
     border-color: #fff !important;
     box-shadow: 0 0 6px rgba(255,255,255,0.3);
+}
+
+.val-input::-webkit-inner-spin-button,
+.val-input::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
 }
         #toolbar-panel .css-output,
         #toolbar-panel .css-output * {
