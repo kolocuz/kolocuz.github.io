@@ -58,6 +58,30 @@ main {
   color: inherit;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.04), 0 1px 4px rgba(0,0,0,0.03);
+  cursor: pointer; /* ← указатель мыши */
+  position: relative; /* для псевдоэлемента */
+}
+
+/* Подсказка "Нажми, чтобы открыть" */
+.card::after {
+  content: "↗ Открыть";
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  padding: 4px 12px;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.card:hover::after {
+  opacity: 1;
 }
 
 .card:hover {
@@ -123,4 +147,13 @@ footer {
   .card-body { padding: 10px 12px; }
   .card-title { font-size: 13px; }
   .card-desc { font-size: 11px; }
+  
+  /* на мобилках подсказка видна всегда (но можно убрать, если мешает) */
+  .card::after {
+    opacity: 0.7;
+    font-size: 10px;
+    padding: 3px 10px;
+    bottom: 10px;
+    right: 12px;
+  }
 }
